@@ -67,19 +67,19 @@ Market Opportunity Score
 | `export_gap` | Export Gap | 한국 세계평균 점유율 대비 해당국 한국산 점유율 차이 | 높을수록 좋음 |
 | `korea_export_growth` | 한국 수출 증가율 | 해당국으로의 한국산 수출 증가율 | 높을수록 좋음 |
 | `competition_openness` | 경쟁시장 개방성 | 특정 경쟁국의 독점 정도가 낮은지 | 개방적일수록 좋음 |
-| `tariff_accessibility` | 관세 접근성 | 실효관세·FTA 등 가격 경쟁력 | 관세 낮을수록 좋음 |
 | `logistics_accessibility` | 물류 접근성 | 한국→해당국 공급 용이성 | 물류부담 낮을수록 좋음 |
+
+> `tariff_accessibility`(관세 접근성)는 2026-09-18부로 이 가중치 공식에서 제외되었습니다. 관세율은 변동성이 커서 점수화하지 않고, 11-1번의 뉴스 기반 AI Insight 텍스트로만 제공합니다.
 
 ### 4-2. 가중치 공식
 
 ```
 Korea Penetration Opportunity Score
-  = low_korea_share_score        × 0.25
-  + export_gap_score              × 0.25
-  + korea_export_growth_score     × 0.15
-  + competition_openness_score    × 0.10
-  + tariff_accessibility_score    × 0.15
-  + logistics_accessibility_score × 0.10
+  = low_korea_share_score        × 0.29
+  + export_gap_score              × 0.29
+  + korea_export_growth_score     × 0.18
+  + competition_openness_score    × 0.12
+  + logistics_accessibility_score × 0.12
 
 (가중치 총합 = 1.00)
 ```
@@ -119,7 +119,7 @@ Score = ((x - min) / (max - min)) × 100
 ```
 Score = ((max - x) / (max - min)) × 100
 ```
-적용 대상: 한국산 기존 점유율, 관세율, 물류일수, 경쟁국 시장 집중도 등
+적용 대상: 한국산 기존 점유율, 물류일수, 경쟁국 시장 집중도 등
 
 ### 6-3. Market Size Normalization (로그 변환)
 시장규모는 초대형 시장(미국·중국 등) 때문에 다른 국가 값이 지나치게 왜곡될 수 있어, 일반 Min-Max 대신 로그 변환을 우선 적용합니다.
@@ -198,9 +198,11 @@ Blue Ocean Score = SQRT(Market Opportunity Score × Korea Penetration Opportunit
 | - | USA | 57.8 | 45.7 | 51.4 (필터 제외 대상) |
 | - | Japan | 14.1 | 30.4 | 20.7 (필터 제외 대상) |
 
+> ⚠️ 위 Penetration Opportunity 수치는 2026-09-18 가중치 변경(관세 항목 제외, 4-2번 참고) 이전 예시로, 참고용 가상 데이터입니다. 실제 값은 현재 공식으로 재계산해야 합니다.
+
 USA·Japan은 한국산 점유율(12.5%, 20.0%)이 한국 세계평균(8.1%)보다 이미 높으므로 8번 필터링 규칙에 따라 최종 후보에서 제외됩니다.
 
-**중요한 해석 포인트**: Export Gap만 보면 Mexico가 1위지만, 관세·물류 등 진입 가능성까지 반영하면 UAE가 최종 1위가 됩니다. 이 차이가 단순 무역통계와 이 서비스의 차별점입니다.
+**중요한 해석 포인트**: Export Gap만 보면 Mexico가 1위지만, 물류 등 진입 가능성까지 반영하면 UAE가 최종 1위가 됩니다. 이 차이가 단순 무역통계와 이 서비스의 차별점입니다. (표의 관세(%) 열은 점수에는 반영되지 않으며, 11-1번 방식의 AI Insight 문장 참고용 예시입니다.)
 
 ---
 
@@ -235,15 +237,15 @@ USA·Japan은 한국산 점유율(12.5%, 20.0%)이 한국 세계평균(8.1%)보�
 
 ### 11-1. 관세율 처리 방식 (뉴스 기반 AI 추정)
 
-관세율은 국가·품목별로 변동성이 매우 크고, 관세청 Open API는 승인 지연 등 실시간성이 떨어지는 문제가 있어 `tariff_rate`/`tariff_accessibility` 지표는 관세청 API를 직접 호출하지 않습니다. 대신 아래 방식으로 처리합니다.
+관세율은 국가·품목별로 변동성이 매우 크고, 관세청 Open API는 승인 지연 등 실시간성이 떨어지는 문제가 있습니다. 이에 따라 `tariff_accessibility`는 **4-2번 가중치 공식에서 완전히 제외**되었고, `tariff_rate`는 점수 계산에 쓰이지 않는 AI Insight 전용 텍스트 지표로만 남습니다. 관세청 API는 이 프로젝트에서 호출하지 않습니다.
 
 1. Open API로 관세·무역 관련 최신 뉴스를 크롤링한다 (관세 인상/인하, FTA 협상, 무역분쟁 등).
-2. AI가 크롤링된 뉴스를 바탕으로 해당 HS코드·국가의 최신 관세율 동향을 추정하고, 이를 `tariff_rate`/`tariff_accessibility` 산출과 AI Insight 문장에 반영한다.
+2. AI가 크롤링된 뉴스를 바탕으로 해당 HS코드·국가의 최신 관세율 동향을 추정하고, 이를 AI Insight 문장에 서술형으로만 반영한다 (Blue Ocean Score 계산에는 포함하지 않음).
 
 **규칙**
 - 뉴스에 근거하지 않은 관세율 수치를 임의로 생성하지 않는다.
-- 관세율 추정치는 "뉴스 기반 추정치"임을 AI Insight 문장에 명시한다 (예: "최근 뉴스에 따르면 관세율이 인상될 가능성이 있습니다" 등 근거를 함께 제시).
-- 관련 뉴스가 확보되지 않는 국가/품목은 `tariff_rate`를 NULL로 유지하고, 확정 수치인 것처럼 단정하지 않는다.
+- 관세율 추정은 "뉴스 기반 추정치"이며 점수에 반영되지 않는다는 점을 AI Insight 문장에 명시한다 (예: "최근 뉴스에 따르면 관세율이 인상될 가능성이 있습니다" 등 근거를 함께 제시).
+- 관련 뉴스가 확보되지 않는 국가/품목은 관세 관련 문장을 생성하지 않는다 (단정하지 않음).
 
 ---
 
@@ -295,4 +297,9 @@ USA·Japan은 한국산 점유율(12.5%, 20.0%)이 한국 세계평균(8.1%)보�
 ### 2026-09-18
 - Changed: `tariff_rate`/`tariff_accessibility`의 데이터 소스를 관세청 Open API 직접 호출에서, 관세/무역 뉴스 Open API 크롤링 + AI Insight 기반 관세율 동향 추정 방식으로 변경 (11-1번 참고).
 - Reason: 관세율은 변동성이 크고 관세청 API는 승인 지연 등 실시간성 문제가 있어, 최신 뉴스 기반 추정 방식이 더 안정적으로 운영 가능하다고 판단.
-- Impact: `tariff_rate` 컬럼 값은 이제 공식 수치가 아닌 뉴스 기반 AI 추정치이며, 근거 뉴스가 없는 경우 NULL 유지. 점수 공식·가중치는 변경 없음.
+- Impact: `tariff_rate` 컬럼 값은 이제 공식 수치가 아닌 뉴스 기반 AI 추정치이며, 근거 뉴스가 없는 경우 관련 문장을 생성하지 않음.
+
+### 2026-09-18 (2)
+- Changed: `tariff_accessibility`를 Korea Penetration Opportunity Score 가중치 공식(4-2번)에서 완전히 제외. 기존 공식: `low_korea_share×0.25 + export_gap×0.25 + korea_export_growth×0.15 + competition_openness×0.10 + tariff_accessibility×0.15 + logistics_accessibility×0.10`. 변경 후 공식: `low_korea_share×0.29 + export_gap×0.29 + korea_export_growth×0.18 + competition_openness×0.12 + logistics_accessibility×0.12` (제외된 0.15를 나머지 5개 지표에 비례 재분배). `src/score_engine_C.py`의 `penetration_weights`도 동일하게 수정.
+- Reason: 관세율을 더 이상 점수화하지 않고 뉴스 기반 AI Insight 서술형 텍스트로만 제공하기로 결정 (위 항목 참고). 점수화하지 않는 지표를 가중치 공식에 남겨두면 혼선이 생기므로 공식에서도 제거.
+- Impact: Korea Penetration/Blue Ocean Score 수치가 기존 대비 달라짐 (재계산 필요). 9번 예시 표의 Penetration Opportunity 수치는 구 공식 기준이므로 참고용으로만 사용.

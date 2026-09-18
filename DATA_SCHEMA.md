@@ -36,10 +36,10 @@
 | `seasonality` | float | 0~100 계절성 지수 | Comtrade 월별 데이터 자체 계산 |
 | `korea_export_growth` | float | 한국발 수출 증가율(%) | Comtrade |
 | `top3_concentration` | float | 상위 3개 수출국 점유율 합(%) | Comtrade |
-| `tariff_rate` | float | 실효관세율(%) | 뉴스 크롤링 기반 AI 추정치 (관세청 API 미사용, 상세는 `BLUE_OCEAN_SCORE.md` 11번 AI Insight 참고. 추정 불가 시 NULL) |
+| `tariff_rate` | float | 실효관세율(%) — **점수 계산에는 사용하지 않음, AI Insight 서술 전용** | 뉴스 크롤링 기반 AI 추정치 (관세청 API 미사용, 상세는 `BLUE_OCEAN_SCORE.md` 11-1번 참고. 추정 불가 시 관련 문장 미생성) |
 | `logistics_days` | int | 한국→해당국 물류 소요일수 | 자체 근사치 (확보 안 되면 NULL) |
 
-**주의**: `tariff_rate`, `logistics_days`, `google_trend`는 확보가 불확실한 지표입니다. 확보 안 될 경우 해당 세부점수는 가중치 재분배(나머지 지표로 총합 1.0 재조정) 하거나, 문서 개발원칙 3번에 따라 팀 협의 후 공식을 수정하고 CHANGELOG에 기록하세요.
+**주의**: `logistics_days`, `google_trend`는 확보가 불확실한 지표입니다. 확보 안 될 경우 해당 세부점수는 가중치 재분배(나머지 지표로 총합 1.0 재조정) 하거나, 문서 개발원칙 3번에 따라 팀 협의 후 공식을 수정하고 CHANGELOG에 기록하세요. `tariff_rate`는 점수 공식에 포함되지 않으므로 재분배 대상이 아닙니다 (`BLUE_OCEAN_SCORE.md` CHANGELOG 2026-09-18 참고).
 
 ## 4. 스코어 계산 후 추가 컬럼
 
@@ -74,7 +74,7 @@
 | 환율 API | USD→KRW 환산 | 한국수출입은행 API or exchangerate-api.com | 즉시 발급 가능 |
 | KOTRA 해외전시회 정보 | 박람회명/개최지/기간/참가기업수 | data.go.kr 활용신청 | CSV 우선 사용, OpenAPI는 승인 지연 가능 |
 | Google Trends | 검색 관심도 | `pytrends` (비공식 라이브러리) | 안정성 낮음 — 선택 사항 |
-| 관세 뉴스 Open API | 실효관세율 (뉴스 기반 AI 추정) | 관세/무역 뉴스 크롤링 Open API → AI Insight가 최신 동향 반영 | 관세청 API 대비 변동성 대응 용이, 상세는 `BLUE_OCEAN_SCORE.md` 11번 참고 |
+| 관세 뉴스 Open API | 실효관세율 (뉴스 기반 AI 추정, 점수 미반영) | 관세/무역 뉴스 크롤링 Open API → AI Insight가 최신 동향 반영 | 관세청 API 대비 변동성 대응 용이, 상세는 `BLUE_OCEAN_SCORE.md` 11-1번 참고 |
 
 ---
 

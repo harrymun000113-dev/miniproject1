@@ -4,9 +4,11 @@ import pandas as pd
 
 market_weights = {'market_size': .25, 'cagr_3y': .30, 'growth_1y': .25,
                   'google_trend': .10, 'seasonality': .10}
-penetration_weights = {'korea_market_share': .25, 'export_gap': .25,
-                       'korea_export_growth': .15, 'top3_concentration': .10,
-                       'tariff_rate': .15, 'logistics_days': .10}
+# tariff_rate는 점수에 반영하지 않음: 관세율은 뉴스 크롤링 기반 AI Insight 텍스트로만 제공한다 (BLUE_OCEAN_SCORE.md 11-1번).
+# 제외된 0.15는 나머지 5개 지표에 비례 재분배 (BLUE_OCEAN_SCORE.md CHANGELOG 참고).
+penetration_weights = {'korea_market_share': .29, 'export_gap': .29,
+                       'korea_export_growth': .18, 'top3_concentration': .12,
+                       'logistics_days': .12}
 
 
 def score_engine_c(input_df: pd.DataFrame) -> pd.DataFrame:
@@ -23,7 +25,7 @@ def score_engine_c(input_df: pd.DataFrame) -> pd.DataFrame:
         df[column] = df[column].where(np.isfinite(df[column]))
     for column in ['google_trend', 'seasonality', 'top3_concentration']:
         df[column] = df[column].where(df[column].between(0, 100))
-    for column in ['tariff_rate', 'logistics_days']:
+    for column in ['logistics_days']:
         df[column] = df[column].where(df[column].ge(0))
     for output in ['market_opportunity_score', 'penetration_opportunity_score', 'blue_ocean_score']:
         df[output] = np.nan
@@ -42,7 +44,7 @@ def score_engine_c(input_df: pd.DataFrame) -> pd.DataFrame:
                               'reason': 'missing_or_constant'})
             else:
                 normalized[column] = (values - low) / (high - low) * 100
-                if column in ('korea_market_share', 'top3_concentration', 'tariff_rate', 'logistics_days'):
+                if column in ('korea_market_share', 'top3_concentration', 'logistics_days'):
                     normalized[column] = 100 - normalized[column]
         for weights, output in [(market_weights, 'market_opportunity_score'),
                                 (penetration_weights, 'penetration_opportunity_score')]:
