@@ -14,6 +14,7 @@ REQUEST_DELAY_SECONDS = 1.5  # 요청 사이 최소 간격 (초당 제한 회피
 MAX_RETRY_ATTEMPTS = 5
 COMTRADE_URL = 'https://comtradeapi.un.org/data/v1/get/C/A/HS'
 SERPAPI_URL = 'https://serpapi.com/search.json'
+COUNTRY_REF_URL = 'https://comtradeapi.un.org/files/v1/app/reference/Reporters.json'
 
 # Comtrade 리포터 코드 → ISO 3166-1 alpha-2 (Google Trends geo 파라미터). 필요한 국가 추가하세요.
 COUNTRY_ISO2 = {
@@ -25,6 +26,8 @@ COUNTRY_ISO2 = {
 HS_KEYWORD_MAP = {
     '330499': 'cosmetics',
 }
+
+_country_code_cache = None
 
 
 def _cache_key(url: str, params: dict) -> Path:
@@ -68,6 +71,34 @@ def _get_api_key() -> str:
     if not subscription_key:
         raise EnvironmentError('.env에 COMTRADE_API_KEY를 설정하세요.')
     return subscription_key
+
+
+def get_country_code_map() -> dict:
+    """ISO3 국가코드 -> Comtrade reporterCode 전체 매핑.
+
+    UN Comtrade 공식 참조파일을 그대로 사용한다 (하드코딩/임의 매핑 금지).
+    한 번 받아오면 data/cache에 저장해 재요청하지 않는다.
+    """
+    global _country_code_cache
+    if _country_code_cache is not None:
+        return _country_code_cache
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cache_file = CACHE_DIR / 'reporters_reference.json'
+    if cache_file.exists():
+        payload = json.loads(cache_file.read_text(encoding='utf-8'))
+    else:
+        response = requests.get(COUNTRY_REF_URL, timeout=30)
+        response.raise_for_status()
+        payload = response.json()
+        cache_file.write_text(json.dumps(payload), encoding='utf-8')
+    mapping = {}
+    for entry in payload.get('results', []):
+        iso3 = entry.get('reporterCodeIsoAlpha3')
+        code = entry.get('reporterCode')
+        if iso3 and code is not None:
+            mapping[iso3.upper()] = int(code)
+    _country_code_cache = mapping
+    return mapping
 
 
 def fetch_trade_data(query_df: pd.DataFrame) -> pd.DataFrame:
