@@ -1,10 +1,56 @@
 """A: .env 인증 및 UN Comtrade 연간 수입 수집. 실제 API 실패 시 가상 대체 금지."""
+
+import hashlib
+import json
 import os
+import time
+
 from pathlib import Path
 
 import pandas as pd
 import requests
 from dotenv import load_dotenv
+
+
+CACHE_DIR = Path(__file__).resolve().parents[1] / 'data' / 'cache'
+REQUEST_DELAY_SECONDS = 1.5  # 요청 사이 최소 간격 (초당 제한 회피)
+MAX_RETRY_ATTEMPTS = 5
+
+
+def _cache_key(params: dict) -> Path:
+    signature = hashlib.sha256(json.dumps(params, sort_keys=True).encode('utf-8')).hexdigest()
+    return CACHE_DIR / f'{signature}.json'
+
+
+def _request_with_cache_and_retry(session: requests.Session, url: str, params: dict) -> dict:
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cache_file = _cache_key(params)
+    if cache_file.exists():
+        return json.loads(cache_file.read_text(encoding='utf-8'))
+
+    delay = REQUEST_DELAY_SECONDS
+    for attempt in range(1, MAX_RETRY_ATTEMPTS + 1):
+        time.sleep(REQUEST_DELAY_SECONDS)
+        response = session.get(url, params=params, timeout=(10, 60))
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as error:
+            status = getattr(error.response, 'status_code', None)
+            retryable = status == 429 or (isinstance(status, int) and status >= 500)
+            if not retryable or attempt == MAX_RETRY_ATTEMPTS:
+                raise
+            wait = delay
+            if error.response is not None:
+                wait = float(error.response.headers.get('Retry-After', delay))
+            print(f'[재시도 {attempt}/{MAX_RETRY_ATTEMPTS}] {status} 응답. {wait:.1f}초 대기 후 재시도합니다.')
+            time.sleep(wait)
+            delay *= 2
+            continue
+        payload = response.json()
+        cache_file.write_text(json.dumps(payload), encoding='utf-8')
+        return payload
+    raise RuntimeError('재시도 한도를 초과했습니다.')
+
 
 
 def fetch_trade_data(query_df: pd.DataFrame) -> pd.DataFrame:
@@ -13,6 +59,9 @@ def fetch_trade_data(query_df: pd.DataFrame) -> pd.DataFrame:
     Output: DATA_SCHEMA.md의 원본 7컬럼 DataFrame.
     국가×품목×연도당 세계발(0), 한국발(410)을 따로 조회한다.
     국가 목록은 실제 분석 대상국 전체를 호출자가 제공한다.
+
+    성공한 응답은 data/cache에 저장되어 같은 조건 재조회 시 API를 다시 부르지 않는다.
+
     """
     df = query_df.copy()
     required = ['hs_code', 'year', 'country_code']
@@ -48,10 +97,15 @@ def fetch_trade_data(query_df: pd.DataFrame) -> pd.DataFrame:
                           'cmdCode': query.hs_code, 'flowCode': 'M', 'partnerCode': str(partner_code),
                           'partner2Code': '0', 'customsCode': 'C00', 'motCode': '0',
                           'maxRecords': 500, 'includeDesc': 'true', 'breakdownMode': 'classic'}
+
+                payload = _request_with_cache_and_retry(
+                    session, 'https://comtradeapi.un.org/data/v1/get/C/A/HS', params)
+
                 response = session.get('https://comtradeapi.un.org/data/v1/get/C/A/HS',
                                        params=params, timeout=(10, 60))
                 response.raise_for_status()
                 payload = response.json()
+
                 if not isinstance(payload, dict) or not isinstance(payload.get('data'), list):
                     raise ValueError('Comtrade 응답에 유효한 data 배열이 없습니다.')
                 records = payload['data']
@@ -85,9 +139,13 @@ def fetch_trade_data(query_df: pd.DataFrame) -> pd.DataFrame:
     for column in ['market_size', 'korea_export_usd']:
         result[column] = pd.to_numeric(result[column], errors='coerce').astype('float64')
     result.attrs['collection_report'] = {'requests': 2 * len(df), 'empty_responses': empty_responses,
+
+                                         'source': 'UN Comtrade API (actual responses, cached)'}
                                          'source': 'UN Comtrade API (actual responses)'}
+
     return result
 
 
 if __name__ == '__main__':
+
     print('A 모듈 준비 완료. fetch_trade_data(query_df)로 실제 수집을 실행하세요.')

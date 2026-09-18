@@ -1,4 +1,10 @@
 
+.env
+data/cache/
+data/processed/
+__pycache__/
+=======
+
 
 .env
 __pycache__/

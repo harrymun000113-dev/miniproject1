@@ -74,7 +74,11 @@ if __name__ == '__main__':
             'cmdCode': '010121', 'reporterDesc': 'Alpha', 'cmdDesc': 'Test', 'primaryValue': amount,
         }]}
         responses.append(response)
+
+    with patch.dict(os.environ, {'COMTRADE_API_KEY': 'test_only'}), patch('src.collect_data_A.load_dotenv'), patch('src.collect_data_A.requests.Session') as mocked:
+
     with patch.dict(os.environ, {'UN_COMTRADE_API_KEY': 'test_only'}), patch('src.collect_data_A.load_dotenv'), patch('src.collect_data_A.requests.Session') as mocked:
+
         session = mocked.return_value.__enter__.return_value
         session.get.side_effect = responses
         collected = fetch_trade_data(query)
@@ -82,7 +86,11 @@ if __name__ == '__main__':
         assert collected.loc[0, 'korea_export_usd'] == 20
         assert session.get.call_count == 2
         assert session.get.call_args.kwargs['params']['partnerCode'] == '410'
+
+    with patch.dict(os.environ, {'COMTRADE_API_KEY': ''}), patch('src.collect_data_A.load_dotenv'):
+
     with patch.dict(os.environ, {'UN_COMTRADE_API_KEY': ''}), patch('src.collect_data_A.load_dotenv'):
+
         try:
             fetch_trade_data(query)
         except EnvironmentError:
