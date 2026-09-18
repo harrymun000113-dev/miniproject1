@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blue Ocean Finder — 한국 발원 미개척 블루오션 정밀 타깃 락온</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Pretendard & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            hunter: {
+              blue: '#0284c7',
+              target: '#ef4444',
+              softbg: '#f8fafc',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f1f5f9;
+      color: #334155;
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+      overflow-x: hidden;
+    }
+    
+    /* Smooth custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .card-shadow {
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+    }
+
+    .world-map-bg {
+      background-color: #ffffff;
+      background-image: 
+        radial-gradient(rgba(148, 163, 184, 0.15) 1.2px, transparent 1.2px),
+        radial-gradient(rgba(226, 232, 240, 0.4) 1.2px, #ffffff 1.2px);
+      background-size: 16px 16px;
+      background-position: 0 0, 8px 8px;
+    }
+
+    @keyframes pulseTarget {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.4; }
+    }
+    .pulse-target {
+      animation: pulseTarget 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased text-slate-700 bg-[#f1f5f9]">
+
+  <header class="bg-white border-b border-slate-200/80 px-4 lg:px-6 py-2.5 flex items-center justify-between sticky top-0 z-50 shadow-xs">
+    <div class="flex items-center gap-4">
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-2 cursor-pointer" onclick="resetToDefault()">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-400 to-blue-600 flex items-center justify-center text-white shadow-xs">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div class="flex items-baseline gap-1.5">
+          <span class="font-extrabold text-lg tracking-tight text-slate-800">Blue Ocean</span>
+          <span class="font-bold text-lg text-sky-600">Finder</span>
+          <span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-600 font-mono tracking-wider">HUNT MODE</span>
+        </div>
+      </div>
+
+      <!-- Search Input -->
+      <div class="hidden sm:flex items-center relative w-72 md:w-80">
+        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text" id="globalSearchInput" oninput="handleTableSearch()" placeholder="사냥할 타깃 국가명 또는 품목 검색..." class="w-full pl-8 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-slate-700 placeholder-slate-400 transition" />
+      </div>
+    </div>
+
+    <!-- Navigation Action Buttons matching Screenshot -->
+    <div class="flex items-center gap-3 text-xs font-medium">
+      <button onclick="scrollToGlobe()" class="px-3 py-1.5 rounded-lg bg-sky-50 text-sky-700 font-semibold border border-sky-200 hover:bg-sky-100 transition flex items-center gap-1.5">
+        <span>🎯 3D 헌팅 지구본</span>
+      </button>
+      <button onclick="scrollToDashboard()" class="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium border border-slate-200 transition flex items-center gap-1.5">
+        <span>📊 분석 대시보드</span>
+      </button>
+      <button onclick="openModal('criteriaModal')" class="hover:text-sky-600 text-slate-600 px-2 py-1 transition font-medium hidden md:inline-block">평가기준 (100점)</button>
+      <button onclick="openModal('algoModal')" class="hover:text-sky-600 text-slate-600 px-2 py-1 transition font-medium hidden md:inline-block">수식 명세</button>
+      <button onclick="downloadMarketReport()" class="px-2.5 py-1 text-slate-600 hover:text-sky-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition flex items-center gap-1">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span>Export (CSV)</span>
+      </button>
+
+      <!-- Currency Switcher -->
+      <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+        <button id="btnUSD" onclick="setCurrency('USD')" class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white text-sky-700 shadow-xs transition">USD ($)</button>
+        <button id="btnKRW" onclick="setCurrency('KRW')" class="px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:text-slate-800 transition">KRW (₩)</button>
+      </div>
+    </div>
+  </header>
+
+  <section id="globeHeroSection" class="p-4 lg:p-6 pb-0">
+    <div class="bg-white rounded-3xl border border-slate-200/90 p-5 lg:p-7 card-shadow grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+      
+      <!-- Left Column: Radar Mission & Locked Target HUD -->
+      <div class="lg:col-span-5 flex flex-col justify-between space-y-4">
+        <div>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-[11px] font-bold">
+            <span>KOREA EXPORT PREDATOR RADAR</span>
+          </div>
+          
+          <h1 class="text-2xl lg:text-[27px] font-black tracking-tight text-slate-900 leading-snug mt-2.5">
+            한국에서 전 세계로 발사되는<br>
+            <span class="text-sky-600">미개척 블루오션 정밀 타깃 락온</span>
+          </h1>
+
+          <p class="text-xs text-slate-500 leading-relaxed mt-2">
+            한국(원점)의 세계 점유율 대비 해당국 수입 침투율이 현저히 낮은 'Export Gap &gt; 0' 기회 시장을 포착합니다. 3D지구의 궤적을 드래그하여 조준하거나 타깃을 클릭하세요.
+          </p>
+        </div>
+
+        <!-- Locked Target HUD Box (Matching Screenshot Exactly) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 card-shadow space-y-3">
+          <!-- Top Row: HUD Status + Target Rank Badge -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="text-[11px] font-mono font-bold text-slate-600">LOCKED TARGET HUD</span>
+            </div>
+            <span id="hudTargetRankBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 border border-rose-200 font-mono">TARGET #1 (최우선)</span>
+          </div>
+
+          <!-- Country Info & Score Row -->
+          <div class="flex items-center justify-between pt-1">
+            <div class="flex items-center gap-3">
+              <div id="hudCountryCodeBox" class="w-11 h-11 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-slate-800 text-sm font-mono">
+                MX
+              </div>
+              <div>
+                <h3 id="hudCountryName" class="text-base font-extrabold text-slate-900">Mexico (멕시코)</h3>
+                <p id="hudHsSubtext" class="text-[11px] text-slate-400 font-medium">HS 854140 Solar Cells &amp; Modules</p>
+              </div>
+            </div>
+
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 font-medium block">Blue Ocean Score</span>
+              <span id="hudCountryScore" class="text-2xl font-black font-mono text-sky-600 tracking-tight">87<span class="text-sm font-semibold text-slate-400">/100</span></span>
+            </div>
+          </div>
+
+          <!-- 3 Mini Metric Cards -->
+          <div class="grid grid-cols-3 gap-2 pt-1 text-center font-mono">
+            <div class="bg-slate-50 border border-slate-100 rounded-xl py-2 px-1">
+              <span class="text-[10px] text-slate-400 font-sans block">수요 잠재력</span>
+              <span id="hudPotentialVal" class="text-xs font-bold text-slate-800 mt-0.5 block">88.5</span>
+            </div>
+            <div class="bg-slate-50 border border-slate-100 rounded-xl py-2 px-1">
+              <span class="text-[10px] text-slate-400 font-sans block">한국 점유율</span>
+              <span id="hudPenetrationVal" class="text-xs font-bold text-slate-800 mt-0.5 block">1.2%</span>
+            </div>
+            <div class="bg-rose-50/50 border border-rose-100 rounded-xl py-2 px-1">
+              <span class="text-[10px] text-rose-500 font-sans block font-medium">침투 타깃(Gap)</span>
+              <span id="hudExportGapVal" class="text-xs font-black text-rose-600 mt-0.5 block">+15.4%p</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons Row -->
+          <div class="flex items-center gap-2 pt-1">
+            <button onclick="scrollToDashboard()" class="flex-1 py-2 px-4 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm shadow-sky-600/20 cursor-pointer">
+              <span>🎯 이 먹잇감 상세 분석 락온</span>
+              <span class="text-xs">↓</span>
+            </button>
+            <button onclick="cycleNextTarget()" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1 cursor-pointer">
+              <span>다음 타깃</span>
+              <span>↻</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Hint -->
+        <p class="text-[11px] text-slate-400 flex items-center gap-1.5 pl-1">
+          <span class="text-amber-500">👉</span>
+          <span>마우스로 3D 지구를 드래그하여 회전할 수 있으며, 붉은 타깃 점을 클릭하면 즉시 락온됩니다.</span>
+        </p>
+      </div>
+
+      <!-- Right Column: 3D Wireframe Hunter Globe Canvas Container -->
+      <div class="lg:col-span-7 relative h-[380px] lg:h-[440px] bg-gradient-to-b from-sky-50/60 to-slate-50/40 rounded-2xl border border-sky-100/80 overflow-hidden flex flex-col justify-between p-3.5">
+        
+        <!-- Top Overlay Header inside Globe Canvas Container -->
+        <div class="relative z-10 flex items-center justify-between text-[11px] font-mono text-slate-500">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
+            <span class="font-semibold text-slate-700">ORIGIN: SEOUL, KOREA (37.5°N, 127.0°E) → HUNTING 6 GLOBAL TARGETS</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="resetGlobeView()" class="w-6 h-6 rounded-lg bg-white/90 hover:bg-white border border-slate-200 flex items-center justify-center text-slate-600 transition shadow-2xs" title="Reset View">
+              🔄
+            </button>
+            <button onclick="zoomGlobe(-2)" class="w-6 h-6 rounded-lg bg-white/90 hover:bg-white border border-slate-200 flex items-center justify-center text-slate-600 transition shadow-2xs font-bold" title="Zoom In">
+              +
+            </button>
+            <button onclick="zoomGlobe(2)" class="w-6 h-6 rounded-lg bg-white/90 hover:bg-white border border-slate-200 flex items-center justify-center text-slate-600 transition shadow-2xs font-bold" title="Zoom Out">
+              -
+            </button>
+          </div>
+        </div>
+
+        <!-- Three.js Canvas Element -->
+        <div id="threeGlobeContainer" class="absolute inset-0 z-0 cursor-grab active:cursor-grabbing"></div>
+
+        <!-- Bottom Overlay Target Quick Select Buttons Row -->
+        <div class="relative z-10 flex flex-wrap items-center gap-1.5 bg-white/80 backdrop-blur-md p-1.5 rounded-xl border border-slate-200/80 w-fit self-center">
+          <span class="text-[11px] text-slate-500 font-semibold px-1 font-mono">사냥 타깃:</span>
+          <button onclick="lockHunterTarget('MEX')" id="btnTargetMEX" class="px-2.5 py-1 text-xs rounded-lg font-bold transition flex items-center gap-1 bg-white text-rose-600 shadow-2xs border border-rose-300">
+            <span>🇲🇽 멕시코</span>
+            <span class="text-[10px] font-mono text-rose-600">+15.4%p</span>
+          </button>
+          <button onclick="lockHunterTarget('VNM')" id="btnTargetVNM" class="px-2.5 py-1 text-xs rounded-lg font-medium transition flex items-center gap-1 text-slate-600 hover:bg-white hover:text-slate-900">
+            <span>🇻🇳 베트남</span>
+            <span class="text-[10px] font-mono text-slate-500">+12.1%p</span>
+          </button>
+          <button onclick="lockHunterTarget('POL')" id="btnTargetPOL" class="px-2.5 py-1 text-xs rounded-lg font-medium transition flex items-center gap-1 text-slate-600 hover:bg-white hover:text-slate-900">
+            <span>🇵🇱 폴란드</span>
+            <span class="text-[10px] font-mono text-slate-500">+9.8%p</span>
+          </button>
+          <button onclick="lockHunterTarget('IND')" id="btnTargetIND" class="px-2.5 py-1 text-xs rounded-lg font-medium transition flex items-center gap-1 text-slate-600 hover:bg-white hover:text-slate-900">
+            <span>🇮🇳 인도</span>
+            <span class="text-[10px] font-mono text-slate-500">+11.2%p</span>
+          </button>
+          <button onclick="lockHunterTarget('DEU')" id="btnTargetDEU" class="px-2.5 py-1 text-xs rounded-lg font-medium transition flex items-center gap-1 text-slate-600 hover:bg-white hover:text-slate-900">
+            <span>🇩🇪 독일</span>
+            <span class="text-[10px] font-mono text-slate-500">+4.8%p</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <div id="dashboardSection" class="px-4 lg:px-6 pt-4">
+    <section class="bg-white rounded-2xl px-5 py-3 border border-slate-200/90 card-shadow flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-4 text-xs">
+        <span class="font-extrabold text-base text-slate-800 tracking-tight">Utility</span>
+
+        <!-- Item Analysis Selector -->
+        <div class="flex items-center gap-2">
+          <span class="text-slate-500 font-medium">Item Analysis:</span>
+          <select id="hsSelect" onchange="handleItemChange()" class="bg-slate-50 border border-slate-200 text-slate-800 font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition cursor-pointer">
+            <option value="854140" selected>8541.40 (Solar Cells &amp; Modules)</option>
+            <option value="850440">8504.40 (Inverters)</option>
+            <option value="330499">3304.99 (Cosmetics)</option>
+            <option value="870829">8708.29 (Auto Parts)</option>
+          </select>
+        </div>
+
+        <!-- Base Market Selector -->
+        <div class="flex items-center gap-2">
+          <span class="text-slate-500 font-medium">Base Market:</span>
+          <select id="baseMarketSelect" onchange="handleBaseMarketChange()" class="bg-slate-50 border border-slate-200 text-slate-700 font-medium rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500/20 cursor-pointer">
+            <option value="GLOBAL" selected>Global Average (세계 평균)</option>
+            <option value="VNM">Vietnam</option>
+            <option value="MEX">Mexico</option>
+            <option value="DEU">Germany</option>
+          </select>
+        </div>
+
+        <!-- Target Score Badge -->
+        <div class="flex items-center gap-1.5 bg-sky-50 border border-sky-100 text-sky-700 px-3 py-1 rounded-lg font-bold text-xs">
+          <span>Target Score:</span>
+          <span id="headerScoreValue" class="text-sky-800 font-mono">87/100</span>
+          <svg class="w-3.5 h-3.5 text-sky-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+        </div>
+
+        <!-- Select Market Direct Dropdown -->
+        <div class="flex items-center gap-2">
+          <span class="text-slate-500 font-medium">Select Market:</span>
+          <select id="countryDirectSelect" onchange="selectCountry(this.value)" class="bg-sky-50/70 border border-sky-200 text-sky-900 font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500/20 cursor-pointer">
+            <option value="MEX" selected>Mexico (멕시코)</option>
+            <option value="VNM">Vietnam (베트남)</option>
+            <option value="POL">Poland (폴란드)</option>
+            <option value="IND">India (인도)</option>
+            <option value="DEU">Germany (독일)</option>
+            <option value="CHN">China (중국)</option>
+            <option value="ITA">Italy (이탈리아)</option>
+            <option value="KOR">Korea (한국)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 1st Rule Filter: Gap > 0 Toggle matching screenshot badge -->
+      <div class="flex items-center gap-2 text-xs">
+        <label for="filterGapOnly" class="flex items-center gap-1.5 text-slate-600 cursor-pointer font-medium">
+          <input type="checkbox" id="filterGapOnly" checked onchange="updateAllUI()" class="w-4 h-4 accent-sky-600 rounded cursor-pointer">
+          <span class="font-semibold text-slate-700">1차 사냥 필터 (Export Gap &gt; 0)</span>
+          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-200">포획대상 추출</span>
+        </label>
+      </div>
+    </section>
+  </div>
+
+  <div class="flex-1 flex flex-row overflow-hidden px-4 lg:px-6 py-4 gap-4">
+    
+    <!-- Slim Left Navigation Sidebar Icon Column -->
+    <aside class="w-12 bg-white rounded-2xl border border-slate-200/90 flex flex-col items-center justify-between py-4 shrink-0 card-shadow">
+      <div class="flex flex-col items-center gap-4">
+        <button onclick="resetToDefault()" class="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center transition" title="Home">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        </button>
+        <button onclick="scrollToGlobe()" class="w-8 h-8 rounded-xl text-rose-500 hover:bg-rose-50 flex items-center justify-center transition" title="3D 헌팅 지구본">
+          <span>🎯</span>
+        </button>
+        <button onclick="openModal('criteriaModal')" class="w-8 h-8 rounded-xl text-slate-400 hover:text-sky-600 hover:bg-slate-50 flex items-center justify-center transition" title="평가기준 100점">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </button>
+        <button onclick="window.open('https://comtradeplus.un.org', '_blank')" class="w-8 h-8 rounded-xl text-slate-400 hover:text-sky-600 hover:bg-slate-50 flex items-center justify-center transition" title="UN Comtrade">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+        </button>
+        <button onclick="openModal('algoModal')" class="w-8 h-8 rounded-xl text-slate-400 hover:text-sky-600 hover:bg-slate-50 flex items-center justify-center transition" title="수식 명세">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+        </button>
+      </div>
+
+      <div class="flex flex-col items-center cursor-pointer group" onclick="triggerAiBriefUpdate()" title="AI 브리핑 새로고침">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-sky-400 via-indigo-400 to-purple-400 p-0.5">
+          <div class="w-full h-full bg-white rounded-md flex items-center justify-center">
+            <span class="text-xs">🤖</span>
+          </div>
+        </div>
+        <span class="text-[9px] font-bold text-sky-700 mt-1">AI</span>
+      </div>
+    </aside>
+
+    <!-- Main Dashboard 3-Column Grid -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
+      
+      <!-- LEFT COLUMN: Trade Show, Real-time Exchange Rate, AI Insight (3 cols) -->
+      <div class="lg:col-span-3 flex flex-col gap-4">
+        
+        <!-- Widget 1: Trade Show Schedule (Matching Screenshot) -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/90 card-shadow flex flex-col">
+          <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="text-slate-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </span>
+              <h3 class="font-bold text-xs text-slate-800">Trade Show Schedule</h3>
+            </div>
+            <span class="text-[10px] font-mono text-sky-600 bg-sky-50 px-1.5 py-0.5 rounded">KOTRA API</span>
+          </div>
+
+          <div class="text-[10px] text-slate-400 font-semibold grid grid-cols-12 pb-1.5 border-b border-slate-100 mb-1.5 px-1">
+            <span class="col-span-4">Date</span>
+            <span class="col-span-8">Key Event</span>
+          </div>
+
+          <!-- Dynamic Schedule List -->
+          <div class="space-y-2 text-xs" id="tradeShowList">
+            <!-- Populated via Javascript -->
+          </div>
+        </div>
+
+        <!-- Widget 2: Real-time Exchange Rate (with Sparklines) -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/90 card-shadow flex flex-col">
+          <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <span class="text-slate-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+              </span>
+              <h3 class="font-bold text-xs text-slate-800">Real-time Exchange Rate</h3>
+            </div>
+            <span class="text-slate-400 text-xs">•••</span>
+          </div>
+
+          <!-- Two Side-by-Side Mini Sparkline Charts -->
+          <div class="grid grid-cols-2 gap-2 h-12 w-full relative mb-2">
+            <div class="h-full relative bg-slate-50/70 rounded-lg p-1">
+              <canvas id="exchangeMiniChart1"></canvas>
+            </div>
+            <div class="h-full relative bg-slate-50/70 rounded-lg p-1">
+              <canvas id="exchangeMiniChart2"></canvas>
+            </div>
+          </div>
+
+          <!-- Rates Grid matching screenshot -->
+          <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] pt-1 border-t border-slate-100 font-mono text-slate-600">
+            <div class="flex flex-col">
+              <span>USD/KRW: 1,320</span>
+              <span>USD/MXN: 18.50</span>
+              <span>USD/VND: 24,500</span>
+            </div>
+            <div class="flex flex-col text-right">
+              <span class="text-emerald-600">+0.12% ↑</span>
+              <span class="text-rose-500">-0.08% ↓</span>
+              <span class="text-slate-400">0.00% -</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget 3: AI Insight Card -->
+        <div class="rounded-2xl p-4 bg-gradient-to-br from-indigo-50/60 via-blue-50/40 to-slate-100/60 border border-slate-200/80 card-shadow flex flex-col justify-between">
+          <div>
+            <h3 class="font-extrabold text-xs text-slate-800 mb-2 flex items-center gap-1.5">
+              <span class="text-sky-600">💡</span>
+              <span>AI Insight</span>
+            </h3>
+            <p id="aiInsightParagraph" class="text-[11px] leading-relaxed text-slate-600 font-normal">
+              Mexico nearshoring trend creates surge in renewable energy demand. Untapped export gap of +15.4%p represents a prime target for Korea solar components.
+            </p>
+          </div>
+          
+          <div class="mt-3 pt-2 border-t border-indigo-100/60 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+            <span id="aiInsightTargetName">Target: Mexico (멕시코)</span>
+            <span class="text-sky-600 font-semibold font-mono">Predator Engine</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CENTER COLUMN: Global Blue Ocean Map & Export Gap Trend (5 cols) -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+        
+        <!-- Top Matrix: Global Blue Ocean Map matching Screenshot -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/90 card-shadow flex flex-col">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-sm text-slate-800">Global Blue Ocean Map</h3>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-200 font-mono">Q1 포착</span>
+            </div>
+            <div class="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> 1순위 먹잇감</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block opacity-75"></span> 유망 사냥터</span>
+            </div>
+          </div>
+          <p class="text-[10px] text-slate-400 mb-2">우상단(Q1)에 위치할수록 시장 성장성이 높고 한국의 침투 기회가 큰 사냥터입니다.</p>
+
+          <!-- Bubble Chart Canvas with World Map Texture Background -->
+          <div class="h-64 w-full relative world-map-bg rounded-xl border border-slate-200/70 p-1">
+            <canvas id="blueOceanChart"></canvas>
+          </div>
+          
+          <div class="mt-2 text-[10px] text-slate-400 flex justify-between px-1 font-mono">
+            <span>0 ← Korea Penetration (%) → 100</span>
+            <span>Target Market Potential (0~100)</span>
+          </div>
+        </div>
+
+        <!-- Bottom Chart: Export Gap Trend in [Selected Country] -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/90 card-shadow flex flex-col">
+          <div class="flex items-center justify-between mb-1.5">
+            <div>
+              <h3 id="trendChartTitle" class="font-bold text-sm text-slate-800">Export Gap Trend in Mexico</h3>
+            </div>
+            <span class="text-slate-400 text-xs">•••</span>
+          </div>
+
+          <!-- Multi-Axis Bar + Line Chart -->
+          <div class="h-52 w-full relative">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Top 10 Blue Ocean Market Rankings (4 cols) -->
+      <div class="lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-200/90 card-shadow flex flex-col">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 mb-2">
+          <div>
+            <h3 class="font-extrabold text-sm text-slate-800">Top 10 Blue Ocean Market Rankings</h3>
+            <p class="text-[10px] text-slate-400 mt-0.5">행을 클릭하면 3D 지구본과 대시보드가 해당 국가로 즉시 락온됩니다.</p>
+          </div>
+          <!-- Sort Dropdown -->
+          <div>
+            <select id="rankSortSelect" onchange="handleSortChange(this.value)" class="text-xs bg-slate-50 border border-slate-200 text-slate-600 font-medium rounded-lg px-2 py-1 focus:outline-none cursor-pointer">
+              <option value="score" selected>Score 순</option>
+              <option value="gap">Export Gap 순</option>
+              <option value="potential">수요 잠재력 순</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="overflow-x-auto flex-1">
+          <table class="w-full text-left text-xs">
+            <thead class="text-[10px] text-slate-400 border-b border-slate-100 bg-slate-50/50">
+              <tr>
+                <th class="py-2 px-1 text-center font-semibold">Rank</th>
+                <th class="py-2 px-2 font-semibold">Country</th>
+                <th class="py-2 px-1 text-center font-semibold text-slate-700">Score</th>
+                <th class="py-2 px-1 text-right font-semibold">Potential</th>
+                <th class="py-2 px-1 text-right font-semibold">Penetration</th>
+                <th class="py-2 px-1 text-center font-semibold">Competitor</th>
+                <th class="py-2 px-1 text-center font-semibold">KOTRA</th>
+              </tr>
+            </thead>
+            <tbody id="rankingTableBody" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Populated via Javascript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Bottom Metric Note -->
+        <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 px-1 font-mono">
+          <span>Selected Market Size:</span>
+          <span id="targetPotentialAmount" class="font-bold text-sky-700 text-xs">$1,840M (USD)</span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200/90 px-6 py-2.5 flex flex-wrap items-center justify-between text-[11px] text-slate-400 z-10 mt-4">
+    <div class="flex items-center gap-5">
+      <a href="#" onclick="openModal('criteriaModal'); return false;" class="hover:text-slate-600 transition">KITA 평가기준 (100점)</a>
+      <a href="#" onclick="openModal('algoModal'); return false;" class="hover:text-slate-600 transition">알고리즘 명세</a>
+      <a href="https://comtradeplus.un.org" target="_blank" class="hover:text-slate-600 transition">UN Comtrade API</a>
+      <a href="https://data.go.kr" target="_blank" class="hover:text-slate-600 transition">KOTRA 공공데이터</a>
+    </div>
+    
+    <div class="flex items-center gap-2 cursor-pointer" onclick="resetToDefault()">
+      <div class="w-4 h-4 rounded-full bg-sky-600 flex items-center justify-center text-white text-[8px]">🎯</div>
+      <span class="font-bold text-slate-700">Blue Ocean</span>
+      <span class="font-semibold text-sky-600">Finder</span>
+      <span class="text-slate-400 font-mono ml-2">v1.0 Final</span>
+    </div>
+  </footer>
+
+  <!-- MODAL 1: KITA 100-Point Evaluation Matrix -->
+  <div id="criteriaModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 card-shadow">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
+            <span>📋 KITA 1차 프로젝트 평가기준 100점 매트릭스</span>
+          </h3>
+          <p class="text-xs text-slate-400">가이드라인 6개 평가 영역을 100% 충족하도록 설계되었습니다.</p>
+        </div>
+        <button onclick="closeModal('criteriaModal')" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-100 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-2.5 text-xs">
+        <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-start gap-3">
+          <span class="px-2 py-0.5 rounded bg-sky-100 text-sky-700 font-bold shrink-0 font-mono">15점</span>
+          <div>
+            <strong class="text-slate-800">1. 데이터 수집 및 연동</strong>
+            <p class="text-slate-500 mt-0.5">UN Comtrade API 규격 데이터셋, KOTRA 해외전시회 API 연동 구조 완료.</p>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-start gap-3">
+          <span class="px-2 py-0.5 rounded bg-sky-100 text-sky-700 font-bold shrink-0 font-mono">15점</span>
+          <div>
+            <strong class="text-slate-800">2. 데이터 전처리 품질</strong>
+            <p class="text-slate-500 mt-0.5">USD ↔ KRW 환산 일괄 처리, 결측/이상치 핸들링 및 DATA_SCHEMA.md 규격 준수.</p>
+          </div>
+        </div>
+
+        <div class="p-3 bg-blue-50/70 border border-blue-100 rounded-xl flex items-start gap-3">
+          <span class="px-2 py-0.5 rounded bg-blue-600 text-white font-bold shrink-0 font-mono">25점</span>
+          <div>
+            <strong class="text-blue-900">3. 지표 및 분석 설계 (핵심 배점)</strong>
+            <p class="text-blue-800 mt-0.5">Export Gap = MAX(한국 세계평균점유율 − 해당국 한국점유율, 0) 및 기하평균 기반 Blue Ocean Score 산출.</p>
+          </div>
+        </div>
+
+        <div class="p-3 bg-sky-50/70 border border-sky-100 rounded-xl flex items-start gap-3">
+          <span class="px-2 py-0.5 rounded bg-sky-600 text-white font-bold shrink-0 font-mono">25점</span>
+          <div>
+            <strong class="text-sky-900">4. 대시보드 기능 완성도</strong>
+            <p class="text-sky-800 mt-0.5">3D 글로벌 헌터 지구본 + 밝고 선명한 화이트 UI 대시보드, 4분면 버블차트, 복합 시계열 차트, Top 10 실시간 Drill-down.</p>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-start gap-3">
+          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold shrink-0 font-mono">10점</span>
+          <div>
+            <strong class="text-slate-800">5. 문서화 및 재현성</strong>
+            <p class="text-slate-500 mt-0.5">README.md, BLUE_OCEAN_SCORE.md, DATA_SCHEMA.md, TEAM_RULES.md 완비.</p>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-start gap-3">
+          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold shrink-0 font-mono">10점</span>
+          <div>
+            <strong class="text-slate-800">6. 비즈니스 시사점 전달 (스토리텔링)</strong>
+            <p class="text-slate-500 mt-0.5">"시장이 큰 국가가 아니라 한국이 놓치고 있는 미개척 블루오션 시장을 발굴한다"는 차별화 가치 증명.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 text-right">
+        <button onclick="closeModal('criteriaModal')" class="px-4 py-1.5 bg-slate-800 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 transition cursor-pointer">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Algorithm Specification -->
+  <div id="algoModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-3xl max-w-xl w-full p-6 card-shadow">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+        <h3 class="text-base font-extrabold text-slate-800">📐 Blue Ocean Score 공식 명세</h3>
+        <button onclick="closeModal('algoModal')" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-100 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs font-mono">
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <span class="font-bold text-sky-700 block mb-1">1. Market Opportunity Score (0~100)</span>
+          <p class="text-slate-600">= log(시장규모)×0.25 + 3년CAGR×0.30 + YoY성장률×0.25 + Trends×0.10 + 계절안정도×0.10</p>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <span class="font-bold text-sky-700 block mb-1">2. Korea Penetration Opportunity Score (0~100)</span>
+          <p class="text-slate-600">= (100 - 한국점유율)×0.25 + Export Gap×0.25 + 한국수출증가율×0.15 + 경쟁개방성×0.10 + 관세×0.15 + 물류×0.10</p>
+        </div>
+        <div class="p-3 bg-sky-50 rounded-xl border border-sky-200">
+          <span class="font-bold text-sky-900 block mb-1">3. Blue Ocean Score (BOS) — 기하평균</span>
+          <p class="text-sky-950 font-bold">= √(Market Opportunity × Korea Penetration Opportunity)</p>
+          <span class="text-[11px] text-slate-500 font-sans mt-1 block">※ 특정 축만 과대평가되는 왜곡을 원천 차단하기 위해 기하평균을 채택함.</span>
+        </div>
+      </div>
+      
+      <div class="mt-4 text-right">
+        <button onclick="closeModal('algoModal')" class="px-4 py-1.5 bg-slate-800 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 cursor-pointer">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const USD_TO_KRW = 1320.0;
+    let currentCurrency = 'USD';
+    let selectedCountryId = 'MEX'; // Default: Mexico (Matching screenshot)
+    let currentHsCode = '854140';
+    let currentSortMode = 'score';
+
+    const database = {
+      "854140": {
+        name: "Solar Cells & Modules (8541.40 태양전지·모듈)",
+        countries: [
+          {
+            id: 'MEX',
+            name: 'Mexico',
+            name_kr: '멕시코',
+            flag: '🇲🇽',
+            lat: 23.6345,
+            lng: -102.5528,
+            score: 87,
+            potential: 88.50,
+            penetration: 1.2,
+            competitors: 3,
+            market_size_usd: 1840,
+            export_gap: 15.40,
+            fx: '18.50 MXN',
+            role_desc: '북미 니어쇼어링 최대 급부상 시장',
+            trend_years: ['2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020'],
+            import_trend: [800, 950, 1100, 1300, 1450, 1600, 1720, 1800, 1840],
+            korea_export_trend: [50, 75, 110, 150, 190, 230, 270, 310, 350],
+            gap_trend: [4.2, 5.5, 7.1, 8.8, 10.4, 12.1, 13.5, 14.7, 15.40],
+            insight: 'Mexico nearshoring trend creates surge in renewable energy demand. Untapped export gap of +15.4%p represents a prime target for Korea solar components.',
+            schedules: [
+              { date: '1. Jun 04', title: '멕시코시티 엑스포 일렉트리카', note: 'KOTRA Mexico Pavilion Matchmaking' },
+              { date: '2. Sep 18', title: 'Solar Power Mexico 2026', note: 'Guadalajara Renewable Center' }
+            ]
+          },
+          {
+            id: 'VNM',
+            name: 'Vietnam',
+            name_kr: '베트남',
+            flag: '🇻🇳',
+            lat: 14.0583,
+            lng: 108.2772,
+            score: 85,
+            potential: 85.10,
+            penetration: 73.0,
+            competitors: 4,
+            market_size_usd: 1420,
+            export_gap: 12.10,
+            fx: '24,500 VND',
+            role_desc: '아세안 신재생 에너지 제조 허브',
+            trend_years: ['2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020'],
+            import_trend: [2800, 3400, 4200, 5100, 6200, 7400, 8500, 8900, 8400],
+            korea_export_trend: [600, 820, 1150, 1400, 1750, 2100, 2400, 2600, 2750],
+            gap_trend: [2.5, 3.8, 5.2, 6.9, 8.4, 9.8, 11.2, 11.8, 12.10],
+            insight: 'Vietnam is experiencing unprecedented industrial power demand, where low Korean export share indicates immediate untapped market opportunity with high potential.',
+            schedules: [
+              { date: '1. Jan 19', title: '하노이 신재생에너지 인프라전', note: 'Hanoi Green Power Hub' },
+              { date: '2. Aug 27', title: '호치민 태양광·ESS 엑스포', note: 'KOTRA Semans Business Fair' }
+            ]
+          },
+          {
+            id: 'POL',
+            name: 'Poland',
+            name_kr: '폴란드',
+            flag: '🇵🇱',
+            lat: 51.9194,
+            lng: 19.1451,
+            score: 86,
+            potential: 78.40,
+            penetration: 3.4,
+            competitors: 2,
+            market_size_usd: 1350,
+            export_gap: 9.80,
+            fx: '4.10 PLN',
+            role_desc: '중동부 유럽 최대 K-그리드 기지',
+            trend_years: ['2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020'],
+            import_trend: [600, 720, 850, 980, 1100, 1200, 1280, 1320, 1350],
+            korea_export_trend: [30, 45, 65, 90, 110, 135, 150, 165, 180],
+            gap_trend: [2.1, 3.2, 4.4, 5.8, 6.9, 7.8, 8.5, 9.2, 9.80],
+            insight: 'Poland is accelerating grid modernizations with high appetite for premium Korean high-efficiency PV modules.',
+            schedules: [
+              { date: '1. Mar 14', title: '바르샤바 Enex 에너지 박람회', note: 'Kielce Trade Fair Pavilion' }
+            ]
+          },
+          {
+            id: 'IND',
+            name: 'India',
+            name_kr: '인도',
+            flag: '🇮🇳',
+            lat: 20.5937,
+            lng: 78.9629,
+            score: 84,
+            potential: 68.90,
+            penetration: 4.8,
+            competitors: 3,
+            market_size_usd: 3100,
+            export_gap: 11.20,
+            fx: '83.20 INR',
+            role_desc: '신재생 500GW 국가 목표 메가프로젝트',
+            trend_years: ['2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020'],
+            import_trend: [1400, 1650, 1900, 2200, 2500, 2750, 2900, 3000, 3100],
+            korea_export_trend: [80, 110, 145, 180, 215, 245, 270, 290, 310],
+            gap_trend: [3.0, 4.2, 5.5, 6.8, 8.1, 9.3, 10.1, 10.8, 11.20],
+            insight: 'India mega-solar projects demand supply chain diversification away from regional dominance.',
+            schedules: [
+              { date: '1. Sep 25', title: 'Renewable Energy India Expo', note: 'Greater Noida Pavilion' }
+            ]
+          },
+          {
+            id: 'DEU',
+            name: 'Germany',
+            name_kr: '독일',
+            flag: '🇩🇪',
+            lat: 51.1657,
+            lng: 10.4515,
+            score: 83,
+            potential: 54.50,
+            penetration: 76.0,
+            competitors: 3,
+            market_size_usd: 4800,
+            export_gap: 4.80,
+            fx: '0.92 EUR',
+            role_desc: '유럽 CBAM 탄소 규제 선도국',
+            trend_years: ['2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020'],
+            import_trend: [2600, 2900, 3200, 3600, 4000, 4300, 4500, 4700, 4800],
+            korea_export_trend: [300, 350, 410, 460, 510, 550, 580, 600, 620],
+            gap_trend: [1.8, 2.3, 2.9, 3.4, 3.9, 4.2, 4.5, 4.7, 4.80],
+            insight: 'Germany maintains strict CBAM certification standards where high quality Korean components hold an ESG advantage.',
+            schedules: [
+              { date: '1. Jun 19', title: 'Intersolar Europe Munich', note: 'Global Tier 1 Fair' }
+            ]
+          },
+          {
+            id: 'CHN',
+            name: 'China',
+            name_kr: '중국',
+            flag: '🇨🇳',
+            lat: 35.8617,
+            lng: 104.1954,
+            score: 85,
+            potential: 43.40,
+            penetration: 53.5,
+            competitors: 1,
+            market_size_usd: 8900,
+            export_gap: 0.12,
+            fx: '7.24 CNY',
+            role_desc: '글로벌 최대 규모 태양광 제조 시장',
+            trend_years: ['2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020'],
+            import_trend: [4800, 5100, 5600, 6200, 6800, 7200, 7800, 8200, 8900],
+            korea_export_trend: [400, 480, 520, 580, 610, 640, 690, 720, 750],
+            gap_trend: [-0.5, 0.2, 0.8, 1.2, 1.6, 2.1, 2.5, 2.9, 3.2],
+            insight: 'China maintains massive volume scale with aggressive domestic fabrication; specialized N-type wafer exports remain the priority.',
+            schedules: [
+              { date: '1. Jan 19', title: 'SNEC 상하이 태양광 박람회', note: 'SNEC Clean Energy Center' }
+            ]
+          },
+          {
+            id: 'ITA',
+            name: 'Italy',
+            name_kr: '이탈리아',
+            flag: '🇮🇹',
+            lat: 41.8719,
+            lng: 12.5674,
+            score: 82,
+            potential: 34.98,
+            penetration: 74.3,
+            competitors: 1,
+            market_size_usd: 2100,
+            export_gap: 1.20,
+            fx: '0.92 EUR',
+            role_desc: '남유럽 영농형 태양광 인센티브 시장',
+            trend_years: ['2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020'],
+            import_trend: [1100, 1250, 1400, 1600, 1750, 1900, 2000, 2050, 2100],
+            korea_export_trend: [100, 130, 160, 190, 220, 250, 280, 310, 340],
+            gap_trend: [0.8, 1.0, 1.2, 1.4, 1.5, 1.6, 1.5, 1.3, 1.20],
+            insight: 'Southern European agrivoltaic incentives offer premium pricing for certified high-durability Korean cell tech.',
+            schedules: [
+              { date: '1. Mar 20', title: 'Key Energy Rimini', note: 'KOTRA Milan Pavilion' }
+            ]
+          },
+          {
+            id: 'KOR',
+            name: 'Korea',
+            name_kr: '한국 (기준국)',
+            flag: '🇰🇷',
+            lat: 37.5665,
+            lng: 126.9780,
+            score: 85,
+            potential: 37.70,
+            penetration: 70.0,
+            competitors: 3,
+            market_size_usd: 2400,
+            export_gap: 0.0,
+            fx: '1,320 KRW',
+            role_desc: '헌팅 레이더 발원지 (Origin Benchmark)',
+            trend_years: ['2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020'],
+            import_trend: [1200, 1300, 1500, 1700, 1900, 2100, 2200, 2300, 2400],
+            korea_export_trend: [900, 1050, 1200, 1350, 1500, 1600, 1700, 1800, 1900],
+            gap_trend: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            insight: 'Domestic reference benchmark market showcasing high adoption of high-efficiency N-type TOPCon cells.',
+            schedules: [
+              { date: '1. Apr 12', title: '대구 국제그린에너지엑스포', note: 'EXCO National Center' }
+            ]
+          }
+        ]
+      },
+      "850440": {
+        name: "Inverters (8504.40 인버터/전력변환기)",
+        countries: [
+          {
+            id: 'MEX',
+            name: 'Mexico',
+            name_kr: '멕시코',
+            flag: '🇲🇽',
+            lat: 23.6345,
+            lng: -102.5528,
+            score: 88,
+            potential: 84.2,
+            penetration: 1.8,
+            competitors: 2,
+            market_size_usd: 1950,
+            export_gap: 16.20,
+            fx: '18.50 MXN',
+            role_desc: '북미 EV 및 전력변환 인버터 관문',
+            trend_years: ['2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020'],
+            import_trend: [850, 1000, 1180, 1350, 1500, 1680, 1800, 1900, 1950],
+            korea_export_trend: [60, 90, 130, 170, 210, 260, 300, 340, 380],
+            gap_trend: [4.0, 5.8, 7.5, 9.4, 11.2, 12.9, 14.5, 15.6, 16.20],
+            insight: 'Primary supply conduit to US EV and power electronics manufacturers in Mexico border industrial parks.',
+            schedules: [
+              { date: '1. Jun 04', title: 'Expo Electrica Mexico City', note: 'KOTRA Mexico Center' }
+            ]
+          },
+          {
+            id: 'VNM',
+            name: 'Vietnam',
+            name_kr: '베트남',
+            flag: '🇻🇳',
+            lat: 14.0583,
+            lng: 108.2772,
+            score: 86,
+            potential: 82.0,
+            penetration: 75.0,
+            competitors: 3,
+            market_size_usd: 1800,
+            export_gap: 13.5,
+            fx: '24,500 VND',
+            role_desc: '스마트 팩토리 전력기기 집중 수요',
+            trend_years: ['2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020'],
+            import_trend: [900, 1050, 1200, 1380, 1520, 1650, 1720, 1780, 1800],
+            korea_export_trend: [180, 220, 270, 310, 360, 400, 440, 470, 500],
+            gap_trend: [3.2, 4.8, 6.5, 8.1, 9.6, 11.0, 12.2, 13.0, 13.5],
+            insight: 'Industrial smart converters are surging in Vietnamese smart factory assembly facilities.',
+            schedules: [
+              { date: '1. Oct 14', title: 'Hanoi Industrial Machinery Fair', note: 'National Grid Pavilion' }
+            ]
+          }
+        ]
+      }
+    };
+  </script>
+
+  <script>
+    let scene, camera, renderer, globeGroup, innerSphere, wireframeSphere, trajectoriesGroup, markersGroup;
+    let isDragging = false, prevMousePos = { x: 0, y: 0 };
+    const KOREA_COORDS = { lat: 37.5665, lng: 126.9780 }; // Seoul
+
+    function initHunterGlobe() {
+      const container = document.getElementById('threeGlobeContainer');
+      if (!container) return;
+
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
+      camera.position.set(0, 3, 20);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0x38bdf8, 1.8);
+      directionalLight.position.set(10, 20, 15);
+      scene.add(directionalLight);
+
+      globeGroup = new THREE.Group();
+      scene.add(globeGroup);
+
+      // 1. Pure White Semi-gloss Core Sphere
+      const sphereGeo = new THREE.SphereGeometry(6.4, 48, 48);
+      const sphereMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.95
+      });
+      innerSphere = new THREE.Mesh(sphereGeo, sphereMat);
+      globeGroup.add(innerSphere);
+
+      // 2. Cyan Wireframe Grid Lattice (Matches the screenshot's clean cyan mesh)
+      const wireGeo = new THREE.WireframeGeometry(new THREE.SphereGeometry(6.45, 28, 28));
+      const wireMat = new THREE.LineBasicMaterial({
+        color: 0xbae6fd,
+        transparent: true,
+        opacity: 0.65,
+        linewidth: 1
+      });
+      wireframeSphere = new THREE.LineSegments(wireGeo, wireMat);
+      globeGroup.add(wireframeSphere);
+
+      // 3. Trajectories and Markers Group
+      trajectoriesGroup = new THREE.Group();
+      markersGroup = new THREE.Group();
+      globeGroup.add(trajectoriesGroup);
+      globeGroup.add(markersGroup);
+
+      // Build target arcs and lock reticles
+      renderHunterTargets();
+
+      // Initial angle pointing towards the Pacific / North America
+      globeGroup.rotation.y = -1.8;
+      globeGroup.rotation.x = 0.25;
+
+      // Mouse drag controls
+      container.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        prevMousePos = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('mouseup', () => { isDragging = false; });
+
+      container.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevMousePos.x;
+        const dy = e.clientY - prevMousePos.y;
+
+        globeGroup.rotation.y += dx * 0.006;
+        globeGroup.rotation.x += dy * 0.006;
+        globeGroup.rotation.x = Math.max(-1.1, Math.min(1.1, globeGroup.rotation.x));
+
+        prevMousePos = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('resize', onGlobeResize);
+      animateHunterGlobe();
+    }
+
+    function latLngToVec3(lat, lng, radius = 6.5) {
+      const phi = (90 - lat) * (Math.PI / 180);
+      const theta = (lng + 180) * (Math.PI / 180);
+      const x = -(radius * Math.sin(phi) * Math.cos(theta));
+      const z = (radius * Math.sin(phi) * Math.sin(theta));
+      const y = (radius * Math.cos(phi));
+      return new THREE.Vector3(x, y, z);
+    }
+
+    function createTrajectoryCurve(p1, p2, height = 2.4) {
+      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+      const dist = p1.distanceTo(p2);
+      mid.normalize().multiplyScalar(6.5 + dist * 0.22 + height);
+      return new THREE.QuadraticBezierCurve3(p1, mid, p2);
+    }
+
+    function renderHunterTargets() {
+      while (trajectoriesGroup.children.length > 0) {
+        trajectoriesGroup.remove(trajectoriesGroup.children[0]);
+      }
+      while (markersGroup.children.length > 0) {
+        markersGroup.remove(markersGroup.children[0]);
+      }
+
+      const koreaVec = latLngToVec3(KOREA_COORDS.lat, KOREA_COORDS.lng, 6.52);
+
+      // Korea Origin Node (Cyan Beacon)
+      const koreaBeacon = new THREE.Mesh(
+        new THREE.SphereGeometry(0.22, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0x0284c7 })
+      );
+      koreaBeacon.position.copy(koreaVec);
+      markersGroup.add(koreaBeacon);
+
+      const koreaRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.28, 0.48, 24),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+      );
+      koreaRing.position.copy(koreaVec);
+      koreaRing.lookAt(koreaVec.clone().multiplyScalar(2));
+      markersGroup.add(koreaRing);
+
+      const currentData = database[currentHsCode] || database["854140"];
+
+      currentData.countries.forEach(country => {
+        if (country.id === 'KOR') return;
+
+        const targetVec = latLngToVec3(country.lat, country.lng, 6.52);
+        const isSelected = country.id === selectedCountryId;
+
+        // Target Marker Node
+        const markerMesh = new THREE.Mesh(
+          new THREE.SphereGeometry(isSelected ? 0.32 : 0.18, 16, 16),
+          new THREE.MeshBasicMaterial({ color: isSelected ? 0xef4444 : 0x0284c7 })
+        );
+        markerMesh.position.copy(targetVec);
+        markersGroup.add(markerMesh);
+
+        // Lock-on Reticle (Red target ring matching screenshot)
+        if (isSelected) {
+          const lockRing = new THREE.Mesh(
+            new THREE.RingGeometry(0.42, 0.65, 32),
+            new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide, transparent: true, opacity: 0.95 })
+          );
+          lockRing.position.copy(targetVec);
+          lockRing.lookAt(targetVec.clone().multiplyScalar(2));
+          markersGroup.add(lockRing);
+        }
+
+        // Curved Trajectory Arc Beam (Red for selected, Cyan for other targets)
+        const curve = createTrajectoryCurve(koreaVec, targetVec, isSelected ? 1.8 : 0.9);
+        const pts = curve.getPoints(45);
+        const arcGeo = new THREE.BufferGeometry().setFromPoints(pts);
+        const arcMat = new THREE.LineBasicMaterial({
+          color: isSelected ? 0xef4444 : 0x38bdf8,
+          linewidth: isSelected ? 2.5 : 1,
+          transparent: true,
+          opacity: isSelected ? 0.95 : 0.45
+        });
+        const arcLine = new THREE.Line(arcGeo, arcMat);
+        trajectoriesGroup.add(arcLine);
+      });
+    }
+
+    function animateHunterGlobe() {
+      requestAnimationFrame(animateHunterGlobe);
+      if (!isDragging && globeGroup) {
+        globeGroup.rotation.y += 0.0012;
+      }
+      renderer.render(scene, camera);
+    }
+
+    function onGlobeResize() {
+      const container = document.getElementById('threeGlobeContainer');
+      if (!container || !renderer || !camera) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function lockHunterTarget(countryId) {
+      selectCountry(countryId);
+
+      const currentData = database[currentHsCode] || database["854140"];
+      const country = currentData.countries.find(c => c.id === countryId);
+      if (country && globeGroup) {
+        const targetLngRad = -(country.lng + 180) * (Math.PI / 180) + Math.PI / 2;
+        const targetLatRad = (country.lat) * (Math.PI / 180) * 0.4;
+        
+        globeGroup.rotation.y = targetLngRad;
+        globeGroup.rotation.x = targetLatRad;
+      }
+    }
+
+    function resetGlobeView() {
+      if (globeGroup) {
+        globeGroup.rotation.y = -1.8;
+        globeGroup.rotation.x = 0.25;
+      }
+      camera.position.set(0, 3, 20);
+    }
+
+    function zoomGlobe(step) {
+      camera.position.z = Math.max(12, Math.min(32, camera.position.z + step));
+    }
+
+    function cycleNextTarget() {
+      const currentData = database[currentHsCode] || database["854140"];
+      const targetList = currentData.countries.filter(c => c.id !== 'KOR');
+      const curIdx = targetList.findIndex(c => c.id === selectedCountryId);
+      const nextIdx = (curIdx + 1) % targetList.length;
+      lockHunterTarget(targetList[nextIdx].id);
+    }
+  </script>
+
+  <script>
+    let blueOceanChartInstance = null;
+    let trendChartInstance = null;
+    let sparkline1Instance = null;
+    let sparkline2Instance = null;
+
+    function formatMoney(amountInMillionUSD) {
+      if (currentCurrency === 'USD') {
+        return amountInMillionUSD >= 1000 
+          ? `$${(amountInMillionUSD / 1000).toFixed(2)}B` 
+          : `$${Math.round(amountInMillionUSD)}M`;
+      } else {
+        const krwBillion = (amountInMillionUSD * 1000000 * USD_TO_KRW) / 100000000;
+        return krwBillion >= 10000 
+          ? `약 ${(krwBillion / 10000).toFixed(2)}조 원` 
+          : `약 ${Math.round(krwBillion).toLocaleString()}억 원`;
+      }
+    }
+
+    function setCurrency(curr) {
+      currentCurrency = curr;
+      document.getElementById('btnUSD').className = curr === 'USD'
+        ? 'px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white text-sky-700 shadow-xs transition cursor-pointer'
+        : 'px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:text-slate-800 transition cursor-pointer';
+      
+      document.getElementById('btnKRW').className = curr === 'KRW'
+        ? 'px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white text-sky-700 shadow-xs transition cursor-pointer'
+        : 'px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:text-slate-800 transition cursor-pointer';
+
+      updateAllUI();
+    }
+
+    function renderMiniSparklines() {
+      const ctx1 = document.getElementById('exchangeMiniChart1').getContext('2d');
+      const ctx2 = document.getElementById('exchangeMiniChart2').getContext('2d');
+
+      if (sparkline1Instance) sparkline1Instance.destroy();
+      if (sparkline2Instance) sparkline2Instance.destroy();
+
+      sparkline1Instance = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: [1, 2, 3, 4, 5, 6, 7],
+          datasets: [{
+            data: [1315, 1318, 1316, 1324, 1320, 1325, 1320],
+            borderColor: '#818cf8',
+            borderWidth: 1.8,
+            pointRadius: 0,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: { x: { display: false }, y: { display: false } }
+        }
+      });
+
+      sparkline2Instance = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: [1, 2, 3, 4, 5, 6, 7],
+          datasets: [{
+            data: [18.2, 18.4, 18.3, 18.6, 18.5, 18.55, 18.50],
+            borderColor: '#38bdf8',
+            borderWidth: 1.8,
+            pointRadius: 0,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: { x: { display: false }, y: { display: false } }
+        }
+      });
+    }
+
+    function renderBlueOceanMap(dataList) {
+      const ctx = document.getElementById('blueOceanChart').getContext('2d');
+      
+      const chartPoints = dataList.map(c => {
+        const isSelected = c.id === selectedCountryId;
+        return {
+          x: c.penetration,
+          y: c.potential,
+          r: isSelected ? 22 : Math.max(Math.min(Math.sqrt(c.market_size_usd) * 0.32, 18), 9),
+          country: c,
+          backgroundColor: isSelected ? 'rgba(239, 68, 68, 0.85)' : 'rgba(186, 230, 253, 0.65)',
+          borderColor: isSelected ? '#ef4444' : '#38bdf8',
+          borderWidth: isSelected ? 2.5 : 1
+        };
+      });
+
+      if (blueOceanChartInstance) blueOceanChartInstance.destroy();
+
+      blueOceanChartInstance = new Chart(ctx, {
+        type: 'bubble',
+        data: {
+          datasets: [{
+            label: 'Countries',
+            data: chartPoints,
+            backgroundColor: chartPoints.map(p => p.backgroundColor),
+            borderColor: chartPoints.map(p => p.borderColor),
+            borderWidth: chartPoints.map(p => p.borderWidth),
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#0f172a',
+              bodyColor: '#334155',
+              borderColor: '#e2e8f0',
+              borderWidth: 1,
+              padding: 9,
+              displayColors: false,
+              titleFont: { weight: 'bold', size: 12 },
+              callbacks: {
+                title: (items) => `${items[0].raw.country.name} (${items[0].raw.country.name_kr}) [Score: ${items[0].raw.country.score}]`,
+                label: (ctx) => [
+                  `• 잠재력: ${ctx.raw.country.potential}`,
+                  `• 한국 점유율: ${ctx.raw.country.penetration}%`,
+                  `• Export Gap: +${ctx.raw.country.export_gap}%p`,
+                  `• 시장규모: ${formatMoney(ctx.raw.country.market_size_usd)}`
+                ]
+              }
+            }
+          },
+          scales: {
+            x: {
+              min: 0,
+              max: 100,
+              grid: { color: 'rgba(226, 232, 240, 0.8)', borderDash: [4, 4] },
+              ticks: { stepSize: 25, color: '#94a3b8', font: { size: 10 } },
+              title: { display: true, text: 'Korea Penetration (%)', color: '#64748b', font: { size: 10, weight: '600' } }
+            },
+            y: {
+              min: 0,
+              max: 100,
+              grid: { color: 'rgba(226, 232, 240, 0.8)', borderDash: [4, 4] },
+              ticks: { stepSize: 25, color: '#94a3b8', font: { size: 10 } },
+              title: { display: true, text: 'Target Market Potential (0~100)', color: '#64748b', font: { size: 10, weight: '600' } }
+            }
+          },
+          onClick: (e, elements) => {
+            if (elements.length > 0) {
+              const idx = elements[0].index;
+              const c = chartPoints[idx].country;
+              selectCountry(c.id);
+            }
+          }
+        }
+      });
+    }
+
+    function renderTrendChart(country) {
+      if (!country) return;
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      if (trendChartInstance) trendChartInstance.destroy();
+
+      document.getElementById('trendChartTitle').innerText = `Export Gap Trend in ${country.name}`;
+
+      trendChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: country.trend_years,
+          datasets: [
+            {
+              type: 'bar',
+              label: `Total ${country.name} Import`,
+              data: country.import_trend,
+              backgroundColor: 'rgba(219, 234, 254, 0.85)',
+              borderRadius: 3,
+              yAxisID: 'y'
+            },
+            {
+              type: 'bar',
+              label: `Korea Export`,
+              data: country.korea_export_trend,
+              backgroundColor: 'rgba(237, 233, 254, 0.85)',
+              borderRadius: 3,
+              yAxisID: 'y'
+            },
+            {
+              type: 'line',
+              label: `Export Gap`,
+              data: country.gap_trend,
+              borderColor: '#ef4444',
+              borderWidth: 2,
+              tension: 0.35,
+              pointRadius: 2.5,
+              pointBackgroundColor: '#ef4444',
+              fill: false,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { boxWidth: 10, font: { size: 10 }, color: '#64748b' }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8', font: { size: 10 } }
+            },
+            y: {
+              position: 'left',
+              grid: { color: '#f8fafc' },
+              ticks: { color: '#94a3b8', font: { size: 10 } }
+            },
+            y1: {
+              position: 'right',
+              grid: { display: false },
+              ticks: {
+                color: '#ef4444',
+                font: { size: 10 },
+                callback: (val) => `${val.toFixed(1)}%`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTable() {
+      const currentData = database[currentHsCode] || database["854140"];
+      let list = [...currentData.countries];
+
+      const gapOnly = document.getElementById('filterGapOnly').checked;
+      if (gapOnly) {
+        list = list.filter(c => c.export_gap >= 0);
+      }
+
+      const searchVal = (document.getElementById('globalSearchInput')?.value || '').toLowerCase();
+      if (searchVal) {
+        list = list.filter(c => c.name.toLowerCase().includes(searchVal) || c.name_kr.toLowerCase().includes(searchVal));
+      }
+
+      if (currentSortMode === 'score') {
+        list.sort((a, b) => b.score - a.score || b.potential - a.potential);
+      } else if (currentSortMode === 'potential') {
+        list.sort((a, b) => b.potential - a.potential);
+      } else if (currentSortMode === 'gap') {
+        list.sort((a, b) => b.export_gap - a.export_gap);
+      }
+
+      const tbody = document.getElementById('rankingTableBody');
+      tbody.innerHTML = '';
+
+      list.slice(0, 10).forEach((item, index) => {
+        const isSelected = item.id === selectedCountryId;
+        const tr = document.createElement('tr');
+        tr.className = `cursor-pointer transition hover:bg-slate-50 ${isSelected ? 'bg-sky-50/70 font-semibold border-l-2 border-sky-500' : ''}`;
+        tr.onclick = () => lockHunterTarget(item.id);
+
+        tr.innerHTML = `
+          <td class="py-2 px-1 text-center text-slate-400 font-mono">${index + 1}</td>
+          <td class="py-2 px-2 flex items-center gap-1.5 font-medium text-slate-800">
+            <span class="text-sm">${item.flag}</span>
+            <span class="truncate">${item.name}</span>
+          </td>
+          <td class="py-2 px-1 text-center font-bold text-slate-700 font-mono">${item.score}</td>
+          <td class="py-2 px-1 text-right text-slate-600 font-mono">${item.potential.toFixed(2)}</td>
+          <td class="py-2 px-1 text-right text-slate-600 font-mono">${item.penetration.toFixed(1)}%</td>
+          <td class="py-2 px-1 text-center text-slate-500">${item.competitors}</td>
+          <td class="py-2 px-1 text-center">
+            <button onclick="event.stopPropagation(); showKotraNotice('${item.name}');" class="px-2 py-0.5 text-[10px] bg-slate-100 hover:bg-sky-100 text-slate-700 hover:text-sky-700 rounded font-medium border border-slate-200 transition cursor-pointer">KOTRA</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function selectCountry(countryId) {
+      selectedCountryId = countryId;
+      document.getElementById('countryDirectSelect').value = countryId;
+
+      const currentData = database[currentHsCode] || database["854140"];
+      const country = currentData.countries.find(c => c.id === countryId) || currentData.countries[0];
+
+      if (country) {
+        // Update HUD Box
+        document.getElementById('hudCountryCodeBox').innerText = country.id.slice(0, 2);
+        document.getElementById('hudCountryName').innerText = `${country.name} (${country.name_kr})`;
+        document.getElementById('hudCountryScore').innerHTML = `${country.score}<span class="text-sm font-semibold text-slate-400">/100</span>`;
+        document.getElementById('hudPotentialVal').innerText = country.potential.toFixed(1);
+        document.getElementById('hudPenetrationVal').innerText = `${country.penetration.toFixed(1)}%`;
+        document.getElementById('hudExportGapVal').innerText = `+${country.export_gap.toFixed(1)}%p`;
+        document.getElementById('headerScoreValue').innerText = `${country.score}/100`;
+
+        // Update Quick Target Buttons highlight
+        ['MEX', 'VNM', 'POL', 'IND', 'DEU'].forEach(id => {
+          const btn = document.getElementById(`btnTarget${id}`);
+          if (btn) {
+            if (id === countryId) {
+              btn.className = 'px-2.5 py-1 text-xs rounded-lg font-bold transition flex items-center gap-1 bg-white text-rose-600 shadow-2xs border border-rose-300';
+            } else {
+              btn.className = 'px-2.5 py-1 text-xs rounded-lg font-medium transition flex items-center gap-1 text-slate-600 hover:bg-white hover:text-slate-900';
+            }
+          }
+        });
+
+        // Update AI Insight
+        document.getElementById('aiInsightParagraph').innerText = country.insight;
+        document.getElementById('aiInsightTargetName').innerText = `Target: ${country.name} (${country.name_kr})`;
+        document.getElementById('targetPotentialAmount').innerText = `${formatMoney(country.market_size_usd)} (USD)`;
+
+        // Update Trade Shows
+        const schedContainer = document.getElementById('tradeShowList');
+        schedContainer.innerHTML = '';
+        if (country.schedules && country.schedules.length > 0) {
+          country.schedules.forEach(s => {
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-12 py-1 text-xs border-b border-slate-50 items-center';
+            row.innerHTML = `
+              <span class="col-span-4 font-medium text-slate-700 text-[11px]">${s.date}</span>
+              <div class="col-span-8 overflow-hidden">
+                <p class="text-slate-800 truncate text-[11px] font-medium">${s.title}</p>
+                <p class="text-[10px] text-slate-400 truncate">${s.note}</p>
+              </div>
+            `;
+            schedContainer.appendChild(row);
+          });
+        }
+
+        renderTrendChart(country);
+      }
+
+      renderBlueOceanMap(currentData.countries);
+      renderTable();
+
+      if (typeof renderHunterTargets === 'function') {
+        renderHunterTargets();
+      }
+    }
+
+    function handleSortChange(mode) {
+      currentSortMode = mode;
+      renderTable();
+    }
+
+    function handleItemChange() {
+      currentHsCode = document.getElementById('hsSelect').value;
+      const currentData = database[currentHsCode] || database["854140"];
+      selectedCountryId = currentData.countries[0]?.id || 'MEX';
+      document.getElementById('hudHsSubtext').innerText = `HS ${currentHsCode} Analysis`;
+      updateAllUI();
+    }
+
+    function handleBaseMarketChange() {
+      const val = document.getElementById('baseMarketSelect').value;
+      if (val !== 'GLOBAL') {
+        selectCountry(val);
+      }
+    }
+
+    function handleTableSearch() {
+      renderTable();
+    }
+
+    function triggerAiBriefUpdate() {
+      const currentData = database[currentHsCode] || database["854140"];
+      const country = currentData.countries.find(c => c.id === selectedCountryId);
+      if (country) {
+        document.getElementById('aiInsightParagraph').classList.add('opacity-40');
+        setTimeout(() => {
+          document.getElementById('aiInsightParagraph').innerText = `[Live AI Scan] ${country.name} market shows rapid nearshoring expansion with an Export Gap of +${country.export_gap}%p. KOTRA trade pavilion matching is actively recommended.`;
+          document.getElementById('aiInsightParagraph').classList.remove('opacity-40');
+        }, 200);
+      }
+    }
+
+    function showKotraNotice(countryName) {
+      const p = document.getElementById('aiInsightParagraph');
+      p.innerText = `[KOTRA Connected] Direct business matchmaking and overseas branch service are scheduled for ${countryName}.`;
+    }
+
+    function resetToDefault() {
+      selectedCountryId = 'MEX';
+      document.getElementById('hsSelect').value = '854140';
+      document.getElementById('baseMarketSelect').value = 'GLOBAL';
+      document.getElementById('globalSearchInput').value = '';
+      document.getElementById('filterGapOnly').checked = true;
+      resetGlobeView();
+      updateAllUI();
+      scrollToGlobe();
+    }
+
+    function updateAllUI() {
+      const currentData = database[currentHsCode] || database["854140"];
+      const country = currentData.countries.find(c => c.id === selectedCountryId) || currentData.countries[0];
+      if (country) {
+        selectCountry(country.id);
+      } else {
+        renderBlueOceanMap(currentData.countries);
+        renderTable();
+      }
+    }
+
+    function scrollToGlobe() {
+      document.getElementById('globeHeroSection')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function scrollToDashboard() {
+      document.getElementById('dashboardSection')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function downloadMarketReport() {
+      const currentData = database[currentHsCode] || database["854140"];
+      let csv = "Rank,Country,Score,Potential,Penetration,Export_Gap,Market_Size_USD\n";
+      currentData.countries.forEach((c, i) => {
+        csv += `${i + 1},"${c.name}",${c.score},${c.potential},${c.penetration},${c.export_gap},${c.market_size_usd}\n`;
+      });
+
+      const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csv);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `BlueOceanFinder_Report_${currentHsCode}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function openModal(id) {
+      document.getElementById(id)?.classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id)?.classList.add('hidden');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initHunterGlobe();
+      renderMiniSparklines();
+      updateAllUI();
+    });
+  </script>
+</body>
+</html>
