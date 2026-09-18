@@ -42,7 +42,7 @@
       font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
       overflow-x: hidden;
     }
-    
+
     /* Smooth custom scrollbars */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -55,7 +55,7 @@
 
     .world-map-bg {
       background-color: #ffffff;
-      background-image: 
+      background-image:
         radial-gradient(rgba(148, 163, 184, 0.15) 1.2px, transparent 1.2px),
         radial-gradient(rgba(226, 232, 240, 0.4) 1.2px, #ffffff 1.2px);
       background-size: 16px 16px;
@@ -94,7 +94,7 @@
         <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-        <input type="text" id="globalSearchInput" oninput="handleTableSearch()" placeholder="사냥할 타깃 국가명 또는 품목 검색..." class="w-full pl-8 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-slate-700 placeholder-slate-400 transition" />
+        <input type="text" id="globalSearchInput" onkeydown="if(event.key==='Enter') runLiveSearch()" placeholder="국가코드 HS코드 입력 후 Enter (예: VNM 330499)" class="w-full pl-8 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-slate-700 placeholder-slate-400 transition" />
       </div>
     </div>
 
@@ -131,14 +131,14 @@
 
   <section id="globeHeroSection" class="p-4 lg:p-6 pb-0">
     <div class="bg-white rounded-3xl border border-slate-200/90 p-5 lg:p-7 card-shadow grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-      
+
       <!-- Left Column: Radar Mission & Locked Target HUD -->
       <div class="lg:col-span-5 flex flex-col justify-between space-y-4">
         <div>
           <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-[11px] font-bold">
             <span>KOREA EXPORT PREDATOR RADAR</span>
           </div>
-          
+
           <h1 class="text-2xl lg:text-[27px] font-black tracking-tight text-slate-900 leading-snug mt-2.5">
             한국에서 전 세계로 발사되는<br>
             <span class="text-sky-600">미개척 블루오션 정밀 타깃 락온</span>
@@ -216,7 +216,7 @@
 
       <!-- Right Column: 3D Wireframe Hunter Globe Canvas Container -->
       <div class="lg:col-span-7 relative h-[380px] lg:h-[440px] bg-gradient-to-b from-sky-50/60 to-slate-50/40 rounded-2xl border border-sky-100/80 overflow-hidden flex flex-col justify-between p-3.5">
-        
+
         <!-- Top Overlay Header inside Globe Canvas Container -->
         <div class="relative z-10 flex items-center justify-between text-[11px] font-mono text-slate-500">
           <div class="flex items-center gap-1.5">
@@ -333,7 +333,7 @@
   </div>
 
   <div class="flex-1 flex flex-row overflow-hidden px-4 lg:px-6 py-4 gap-4">
-    
+
     <!-- Slim Left Navigation Sidebar Icon Column -->
     <aside class="w-12 bg-white rounded-2xl border border-slate-200/90 flex flex-col items-center justify-between py-4 shrink-0 card-shadow">
       <div class="flex flex-col items-center gap-4">
@@ -366,10 +366,10 @@
 
     <!-- Main Dashboard 3-Column Grid -->
     <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
-      
+
       <!-- LEFT COLUMN: Trade Show, Real-time Exchange Rate, AI Insight (3 cols) -->
       <div class="lg:col-span-3 flex flex-col gap-4">
-        
+
         <!-- Widget 1: Trade Show Schedule (Matching Screenshot) -->
         <div class="bg-white rounded-2xl p-4 border border-slate-200/90 card-shadow flex flex-col">
           <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
@@ -441,7 +441,7 @@
               Mexico nearshoring trend creates surge in renewable energy demand. Untapped export gap of +15.4%p represents a prime target for Korea solar components.
             </p>
           </div>
-          
+
           <div class="mt-3 pt-2 border-t border-indigo-100/60 flex items-center justify-between text-[10px] text-slate-400 font-medium">
             <span id="aiInsightTargetName">Target: Mexico (멕시코)</span>
             <span class="text-sky-600 font-semibold font-mono">Predator Engine</span>
@@ -452,7 +452,7 @@
 
       <!-- CENTER COLUMN: Global Blue Ocean Map & Export Gap Trend (5 cols) -->
       <div class="lg:col-span-5 flex flex-col gap-4">
-        
+
         <!-- Top Matrix: Global Blue Ocean Map matching Screenshot -->
         <div class="bg-white rounded-2xl p-4 border border-slate-200/90 card-shadow flex flex-col">
           <div class="flex items-center justify-between mb-1">
@@ -471,7 +471,7 @@
           <div class="h-64 w-full relative world-map-bg rounded-xl border border-slate-200/70 p-1">
             <canvas id="blueOceanChart"></canvas>
           </div>
-          
+
           <div class="mt-2 text-[10px] text-slate-400 flex justify-between px-1 font-mono">
             <span>0 ← Korea Penetration (%) → 100</span>
             <span>Target Market Potential (0~100)</span>
@@ -550,7 +550,7 @@
       <a href="https://comtradeplus.un.org" target="_blank" class="hover:text-slate-600 transition">UN Comtrade API</a>
       <a href="https://data.go.kr" target="_blank" class="hover:text-slate-600 transition">KOTRA 공공데이터</a>
     </div>
-    
+
     <div class="flex items-center gap-2 cursor-pointer" onclick="resetToDefault()">
       <div class="w-4 h-4 rounded-full bg-sky-600 flex items-center justify-center text-white text-[8px]">🎯</div>
       <span class="font-bold text-slate-700">Blue Ocean</span>
@@ -655,7 +655,7 @@
           <span class="text-[11px] text-slate-500 font-sans mt-1 block">※ 특정 축만 과대평가되는 왜곡을 원천 차단하기 위해 기하평균을 채택함.</span>
         </div>
       </div>
-      
+
       <div class="mt-4 text-right">
         <button onclick="closeModal('algoModal')" class="px-4 py-1.5 bg-slate-800 text-white rounded-xl text-xs font-semibold hover:bg-slate-700 cursor-pointer">확인</button>
       </div>
@@ -1122,7 +1122,7 @@
       if (country && globeGroup) {
         const targetLngRad = -(country.lng + 180) * (Math.PI / 180) + Math.PI / 2;
         const targetLatRad = (country.lat) * (Math.PI / 180) * 0.4;
-        
+
         globeGroup.rotation.y = targetLngRad;
         globeGroup.rotation.x = targetLatRad;
       }
@@ -1157,13 +1157,13 @@
 
     function formatMoney(amountInMillionUSD) {
       if (currentCurrency === 'USD') {
-        return amountInMillionUSD >= 1000 
-          ? `$${(amountInMillionUSD / 1000).toFixed(2)}B` 
+        return amountInMillionUSD >= 1000
+          ? `$${(amountInMillionUSD / 1000).toFixed(2)}B`
           : `$${Math.round(amountInMillionUSD)}M`;
       } else {
         const krwBillion = (amountInMillionUSD * 1000000 * USD_TO_KRW) / 100000000;
-        return krwBillion >= 10000 
-          ? `약 ${(krwBillion / 10000).toFixed(2)}조 원` 
+        return krwBillion >= 10000
+          ? `약 ${(krwBillion / 10000).toFixed(2)}조 원`
           : `약 ${Math.round(krwBillion).toLocaleString()}억 원`;
       }
     }
@@ -1173,7 +1173,7 @@
       document.getElementById('btnUSD').className = curr === 'USD'
         ? 'px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white text-sky-700 shadow-xs transition cursor-pointer'
         : 'px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:text-slate-800 transition cursor-pointer';
-      
+
       document.getElementById('btnKRW').className = curr === 'KRW'
         ? 'px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white text-sky-700 shadow-xs transition cursor-pointer'
         : 'px-2 py-0.5 text-[11px] font-medium text-slate-500 hover:text-slate-800 transition cursor-pointer';
@@ -1231,7 +1231,7 @@
 
     function renderBlueOceanMap(dataList) {
       const ctx = document.getElementById('blueOceanChart').getContext('2d');
-      
+
       const chartPoints = dataList.map(c => {
         const isSelected = c.id === selectedCountryId;
         return {
@@ -1426,7 +1426,7 @@
           <td class="py-2 px-1 text-center font-bold text-slate-700 font-mono">${item.score}</td>
           <td class="py-2 px-1 text-right text-slate-600 font-mono">${item.potential.toFixed(2)}</td>
           <td class="py-2 px-1 text-right text-slate-600 font-mono">${item.penetration.toFixed(1)}%</td>
-          <td class="py-2 px-1 text-center text-slate-500">${item.competitors}</td>
+          <td class="py-2 px-1 text-center text-slate-500">${item.competitors ?? '-'}</td>
           <td class="py-2 px-1 text-center">
             <button onclick="event.stopPropagation(); showKotraNotice('${item.name}');" class="px-2 py-0.5 text-[10px] bg-slate-100 hover:bg-sky-100 text-slate-700 hover:text-sky-700 rounded font-medium border border-slate-200 transition cursor-pointer">KOTRA</button>
           </td>
@@ -1603,6 +1603,99 @@
     }
     function closeModal(id) {
       document.getElementById(id)?.classList.add('hidden');
+    }
+  </script>
+
+  <script>
+    const LATLNG_MAP = {
+      USA:[37.09,-95.71], VNM:[14.06,108.28], MEX:[23.63,-102.55], POL:[51.92,19.15],
+      IND:[20.59,78.96], DEU:[51.17,10.45], CHN:[35.86,104.20], ITA:[41.87,12.57],
+      KOR:[37.57,126.98], JPN:[36.20,138.25], GBR:[55.38,-3.44], FRA:[46.23,2.21],
+      THA:[15.87,100.99], IDN:[-0.79,113.92], BRA:[-14.24,-51.93], CAN:[56.13,-106.35],
+      AUS:[-25.27,133.78], ESP:[40.46,-3.75], NLD:[52.13,5.29], TUR:[38.96,35.24],
+      SAU:[23.89,45.08], ARE:[23.42,53.85], EGY:[26.82,30.80], ZAF:[-30.56,22.94],
+      NGA:[9.08,8.68], RUS:[61.52,105.32], PHL:[12.88,121.77], MYS:[4.21,101.98],
+      SGP:[1.35,103.82], TWN:[23.70,120.96],
+    };
+
+    async function runLiveSearch() {
+      const raw = document.getElementById('globalSearchInput').value.trim();
+      const parts = raw.split(/\s+/);
+      const countriesRaw = (parts[0] || '').toUpperCase();
+      const hsCode = parts[1] || currentHsCode;
+      const countries = countriesRaw.split(',').map(s => s.trim()).filter(Boolean);
+      if (countries.length === 0 || !hsCode) {
+        alert('형식: 국가코드 HS코드 (예: VNM 330499, 여러 나라는 USA,VNM,MEX 330499)');
+        return;
+      }
+
+      showLoadingOverlay(true);
+      try {
+        const res = await fetch(`/api/search?country=${countries.join(',')}&hs_code=${hsCode}`);
+        const data = await res.json();
+        if (data.error) { alert(data.error); return; }
+        if (data.unresolved && data.unresolved.length > 0) {
+          alert(`지원하지 않는 국가코드: ${data.unresolved.join(', ')} (나머지는 조회됨)`);
+        }
+        if (!data.results || data.results.length === 0) {
+          alert('조회된 국가가 없습니다.');
+          return;
+        }
+
+        if (!database[hsCode]) database[hsCode] = { name: `HS ${hsCode}`, countries: [] };
+        const list = database[hsCode].countries;
+
+        data.results.forEach(item => {
+          const coords = LATLNG_MAP[item.id] || [0, 0];
+          const merged = {
+            id: item.id,
+            name: item.id,
+            name_kr: item.id,
+            flag: '🌐',
+            lat: coords[0],
+            lng: coords[1],
+            score: item.score ?? 0,
+            potential: item.potential ?? 0,
+            penetration: item.penetration ?? 0,
+            competitors: null,
+            market_size_usd: item.market_size_usd ?? 0,
+            export_gap: item.export_gap ?? 0,
+            fx: '',
+            role_desc: '실시간 조회 결과',
+            insight: '(실시간 조회 — AI 인사이트 미연동)',
+            schedules: [],
+            trend_years: [],
+            import_trend: [],
+            korea_export_trend: [],
+            gap_trend: [],
+            tariff_rate: item.tariff_rate,
+            logistics_days: item.logistics_days,
+          };
+          const idx = list.findIndex(c => c.id === item.id);
+          idx >= 0 ? list[idx] = merged : list.push(merged);
+        });
+
+        currentHsCode = hsCode;
+        selectedCountryId = data.results[0].id;
+        document.getElementById('hudHsSubtext').innerText = `HS ${hsCode} Analysis (실시간, ${data.results.length}개국 비교)`;
+        updateAllUI();
+      } catch (e) {
+        alert('조회 중 오류: ' + e);
+      } finally {
+        showLoadingOverlay(false);
+      }
+    }
+
+    function showLoadingOverlay(show) {
+      let el = document.getElementById('loadingOverlay');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'loadingOverlay';
+        el.className = 'fixed inset-0 bg-white/70 backdrop-blur-xs z-[999] flex items-center justify-center text-sky-700 font-bold text-sm';
+        el.textContent = '🔎 실시간 데이터 조회 중... (신규 조합은 최대 1분 소요)';
+        document.body.appendChild(el);
+      }
+      el.style.display = show ? 'flex' : 'none';
     }
 
     window.addEventListener('DOMContentLoaded', () => {
