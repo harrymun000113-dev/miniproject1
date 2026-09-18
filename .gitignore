@@ -1,4 +1,15 @@
+
 .env
 data/cache/
 data/processed/
 __pycache__/
+=======
+
+
+.env
+__pycache__/
+*.pyc
+.venv/
+data/
+
+
