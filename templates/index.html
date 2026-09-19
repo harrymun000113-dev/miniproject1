@@ -94,7 +94,7 @@
         <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-        <input type="text" id="globalSearchInput" onkeydown="if(event.key==='Enter') runLiveSearch()" placeholder="국가코드 HS코드 입력 후 Enter (예: VNM 330499)" class="w-full pl-8 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-slate-700 placeholder-slate-400 transition" />
+        <input type="text" id="globalSearchInput" onkeydown="if(event.key==='Enter') runLiveSearch()" placeholder="HS코드 입력 후 Enter (예: 330720)" class="w-full pl-8 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-slate-700 placeholder-slate-400 transition" />
       </div>
     </div>
 
@@ -523,7 +523,7 @@
                 <th class="py-2 px-1 text-right font-semibold">Potential</th>
                 <th class="py-2 px-1 text-right font-semibold">Penetration</th>
                 <th class="py-2 px-1 text-center font-semibold">Competitor</th>
-                <th class="py-2 px-1 text-center font-semibold">KOTRA</th>
+                <th class="py-2 px-1 text-right font-semibold">시장규모</th>
               </tr>
             </thead>
             <tbody id="rankingTableBody" class="divide-y divide-slate-100 text-slate-700">
@@ -533,9 +533,15 @@
         </div>
 
         <!-- Bottom Metric Note -->
-        <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 px-1 font-mono">
-          <span>Selected Market Size:</span>
-          <span id="targetPotentialAmount" class="font-bold text-sky-700 text-xs">$1,840M (USD)</span>
+        <div class="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1 text-[11px] text-slate-400 px-1 font-mono">
+          <div class="flex items-center justify-between">
+            <span>Selected Market Size:</span>
+            <span id="targetPotentialAmount" class="font-bold text-sky-700 text-xs">$1,840M (USD)</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span>전세계 시장규모 (표시된 국가 합계):</span>
+            <span id="worldMarketSize" class="font-bold text-slate-600 text-xs">-</span>
+          </div>
         </div>
       </div>
 
@@ -1428,12 +1434,20 @@
           <td class="py-2 px-1 text-right text-slate-600 font-mono">${item.potential.toFixed(2)}</td>
           <td class="py-2 px-1 text-right text-slate-600 font-mono">${item.penetration.toFixed(1)}%</td>
           <td class="py-2 px-1 text-center text-slate-500">${item.competitors ?? '-'}</td>
-          <td class="py-2 px-1 text-center">
-            <button onclick="event.stopPropagation(); showKotraNotice('${item.name}');" class="px-2 py-0.5 text-[10px] bg-slate-100 hover:bg-sky-100 text-slate-700 hover:text-sky-700 rounded font-medium border border-slate-200 transition cursor-pointer">KOTRA</button>
-          </td>
+          <td class="py-2 px-1 text-right text-slate-600 font-mono">${formatMoney(item.market_size_usd)}</td>
         `;
         tbody.appendChild(tr);
       });
+
+      // 전세계 시장규모: 검색/필터로 걸러지기 전, 이 HS코드에 대해 실제로 조회·채점한
+      // 벤치마크 국가 전체(currentData.countries)의 시장규모 합계다. 진짜 전세계
+      // 합계가 아니라 "지금 이 대시보드가 실제 데이터를 확보한 국가들의 합"이라는 점을
+      // 라벨에 그대로 명시해뒀다(없는 국가 수치를 지어내지 않기 위함).
+      const worldTotal = currentData.countries.reduce((sum, c) => sum + (c.market_size_usd || 0), 0);
+      const worldMarketSizeEl = document.getElementById('worldMarketSize');
+      if (worldMarketSizeEl) {
+        worldMarketSizeEl.innerText = `${formatMoney(worldTotal)} (USD)`;
+      }
     }
 
     function selectCountry(countryId) {
@@ -1620,35 +1634,27 @@
     };
 
     async function runLiveSearch() {
-      const raw = document.getElementById('globalSearchInput').value.trim();
-      const parts = raw.split(/\s+/);
-      const countriesRaw = (parts[0] || '').toUpperCase();
-      const hsCode = parts[1] || currentHsCode;
-      const countries = countriesRaw.split(',').map(s => s.trim()).filter(Boolean);
-      if (countries.length === 0 || !hsCode) {
-        alert('형식: 국가코드 HS코드 (예: VNM 330499, 여러 나라는 USA,VNM,MEX 330499)');
+      // app.py의 /api/search는 이제 국가 파라미터를 받지 않는다 — HS코드 하나만 주면
+      // 벤치마크 20개국 전체를 조회/채점해서 랭킹으로 돌려준다(국가 검색 자체가 없어짐).
+      const hsCode = document.getElementById('globalSearchInput').value.trim();
+      if (!hsCode) {
+        alert('HS코드를 입력하세요 (예: 330720)');
         return;
       }
 
       showLoadingOverlay(true);
       try {
-        const res = await fetch(`/api/search?country=${countries.join(',')}&hs_code=${hsCode}`);
+        const res = await fetch(`/api/search?hs_code=${encodeURIComponent(hsCode)}`);
         const data = await res.json();
         if (data.error) { alert(data.error); return; }
-        if (data.unresolved && data.unresolved.length > 0) {
-          alert(`지원하지 않는 국가코드: ${data.unresolved.join(', ')} (나머지는 조회됨)`);
-        }
         if (!data.results || data.results.length === 0) {
           alert('조회된 국가가 없습니다.');
           return;
         }
 
-        if (!database[hsCode]) database[hsCode] = { name: `HS ${hsCode}`, countries: [] };
-        const list = database[hsCode].countries;
-
-        data.results.forEach(item => {
+        const countries = data.results.map(item => {
           const coords = LATLNG_MAP[item.id] || [0, 0];
-          const merged = {
+          return {
             id: item.id,
             name: item.id,
             name_kr: item.id,
@@ -1672,13 +1678,15 @@
             tariff_rate: item.tariff_rate,
             logistics_days: item.logistics_days,
           };
-          const idx = list.findIndex(c => c.id === item.id);
-          idx >= 0 ? list[idx] = merged : list.push(merged);
         });
 
+        // 이 HS코드는 항상 벤치마크 20개국 전체를 새로 조회한 결과이므로, 기존에
+        // 있던 국가 목록에 이어붙이지 않고 통째로 교체한다.
+        database[hsCode] = { name: `HS ${hsCode}`, countries };
+
         currentHsCode = hsCode;
-        selectedCountryId = data.results[0].id;
-        document.getElementById('hudHsSubtext').innerText = `HS ${hsCode} Analysis (실시간, ${data.results.length}개국 비교)`;
+        selectedCountryId = countries[0]?.id ?? null;
+        document.getElementById('hudHsSubtext').innerText = `HS ${hsCode} Analysis (실시간, ${countries.length}개국 비교)`;
         updateAllUI();
       } catch (e) {
         alert('조회 중 오류: ' + e);
